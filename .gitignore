@@ -1,0 +1,25 @@
+# Python
+*.py[cod]
+__pycache__/
+*.so
+*.egg
+*.egg-info/
+pip-wheel-metadata/
+.pytest_cache/
+.python-version
+
+# Virtual environment
+.venv/
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+/media
+/staticfiles
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
