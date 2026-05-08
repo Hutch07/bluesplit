@@ -44,6 +44,8 @@ INSTALLED_APPS = [
     'core',
 ]
 
+AUTH_USER_MODEL = 'core.User'
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -77,19 +79,35 @@ WSGI_APPLICATION = 'bluesplit.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
+DB_ENGINE = os.environ.get('DB_ENGINE')
+DB_HOST = os.environ.get('DB_HOST', '')
+DB_NAME = os.environ.get('DB_NAME', BASE_DIR / 'db.sqlite3')
+DB_USER = os.environ.get('DB_USER', '')
+DB_PASSWORD = os.environ.get('DB_PASSWORD', '')
+DB_PORT = os.environ.get('DB_PORT', '1433')
+
+if DB_ENGINE:
+    database_engine = DB_ENGINE
+elif DB_HOST:
+    database_engine = 'mssql'
+else:
+    database_engine = 'django.db.backends.sqlite3'
+
 DATABASES = {
     'default': {
-        'ENGINE': 'mssql',
-        'NAME': os.environ.get('DB_NAME', BASE_DIR / 'db.sqlite3'),
-        'USER': os.environ.get('DB_USER', ''),
-        'PASSWORD': os.environ.get('DB_PASSWORD', ''),
-        'HOST': os.environ.get('DB_HOST', ''),
-        'PORT': os.environ.get('DB_PORT', '1433'),
-        'OPTIONS': {
-            'driver': 'ODBC Driver 18 for SQL Server',
-        },
+        'ENGINE': database_engine,
+        'NAME': DB_NAME,
+        'USER': DB_USER,
+        'PASSWORD': DB_PASSWORD,
+        'HOST': DB_HOST,
+        'PORT': DB_PORT,
     }
 }
+
+if database_engine == 'mssql':
+    DATABASES['default']['OPTIONS'] = {
+        'driver': 'ODBC Driver 18 for SQL Server',
+    }
 
 
 # Password validation
