@@ -21,6 +21,6 @@ A Django 6 application scaffolded to run on Azure Web App.
 
 ## Azure deployment
 
-- `runtime.txt` selects `python-3.11`
+- `runtime.txt` selects `python-3.14`
 - `Procfile` starts the app with Gunicorn
 - `requirements.txt` contains the production dependencies
