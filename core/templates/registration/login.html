@@ -12,6 +12,9 @@
             <h1>BlueSplit Login</h1>
             <form method="post" novalidate>
                 {% csrf_token %}
+                {% if next %}
+                    <input type="hidden" name="next" value="{{ next }}">
+                {% endif %}
                 <div class="field">
                     <label for="id_username">Username</label>
                     {{ form.username }}
