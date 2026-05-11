@@ -3,3 +3,4 @@ gunicorn==26.0.0
 mssql-django==1.7.1
 pyodbc
 python-dotenv==1.0.0
+whitenoise==6.5.0
