@@ -40,7 +40,7 @@
     <div class="dashboard-content">
         <h1>Dashboard</h1>
         <p>Welcome, {{ request.user.username }}. This page requires login.</p>
-        {% if request.user.is_superuser or request.user.group.filter(name='Admin').exists %}
+        {% if is_admin %}
             <p><a href="/admin/">Go to Admin Page</a></p>
         {% endif %}
         <p><a href="{% url 'home' %}">Home</a></p>

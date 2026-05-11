@@ -112,6 +112,10 @@ DATABASES = {
         'PORT': DB_PORT,
     }
 }
+if database_engine == 'django.db.backends.postgresql':
+    DATABASES['default']['OPTIONS'] = {
+        'sslmode': 'require',
+    }
 
 if database_engine == 'mssql':
     DATABASES['default']['OPTIONS'] = {

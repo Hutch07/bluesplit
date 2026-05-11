@@ -8,4 +8,5 @@ def home(request):
 
 @login_required
 def dashboard(request):
-    return render(request, 'core/dashboard.html')
+    is_admin = request.user.is_superuser or request.user.group.filter(name='Admin').exists()
+    return render(request, 'core/dashboard.html', {'is_admin': is_admin})
