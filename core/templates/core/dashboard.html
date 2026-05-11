@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Dashboard | BlueSplit</title>
+</head>
+<body>
+    <h1>Dashboard</h1>
+    <p>Welcome, {{ request.user.username }}. This page requires login.</p>
+    <p><a href="{% url 'logout' %}">Logout</a></p>
+    <p><a href="{% url 'home' %}">Home</a></p>
+</body>
+</html>
