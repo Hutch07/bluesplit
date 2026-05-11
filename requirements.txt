@@ -2,3 +2,4 @@ Django==6.0.5
 gunicorn==26.0.0
 mssql-django==1.7.1
 pyodbc
+python-dotenv==1.0.0
