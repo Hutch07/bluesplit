@@ -63,4 +63,4 @@ jobs:
         with:
           app-name: 'bwb-ssi25'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_CB8CD0429EFE45D983B09987A98710A1 }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_38E01A4823D941D69C856BE537490A94 }}
