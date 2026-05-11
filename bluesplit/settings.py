@@ -90,13 +90,16 @@ DB_HOST = os.environ.get('DB_HOST', '')
 DB_NAME = os.environ.get('DB_NAME', BASE_DIR / 'db.sqlite3')
 DB_USER = os.environ.get('DB_USER', '')
 DB_PASSWORD = os.environ.get('DB_PASSWORD', '')
-DB_PORT = os.environ.get('DB_PORT', '1433')
+DB_PORT = os.environ.get('DB_PORT', '5432')
 
+# Determine database engine: use DB_ENGINE if set, else check DB_HOST
 if DB_ENGINE:
     database_engine = DB_ENGINE
 elif DB_HOST:
-    database_engine = 'mssql'
+    # Default to PostgreSQL if only host is provided
+    database_engine = 'django.db.backends.postgresql'
 else:
+    # Fall back to SQLite for local development
     database_engine = 'django.db.backends.sqlite3'
 
 DATABASES = {
