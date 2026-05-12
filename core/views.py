@@ -8,7 +8,15 @@ from .models import Site, Flight
 
 
 def is_pilot_or_admin(user):
-    return user.is_superuser or user.group.filter(name__in=['Pilot', 'Admin']).exists()
+    if user.is_superuser:
+        return True
+    # Check custom core.Group
+    if user.group.filter(name__in=['Pilot', 'Admin']).exists():
+        return True
+    # Fallback: check Django's built-in auth.Group
+    if user.groups.filter(name__in=['Pilot', 'Admin']).exists():
+        return True
+    return False
 
 
 def home(request):
