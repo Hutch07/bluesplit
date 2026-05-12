@@ -362,24 +362,47 @@
         attribution: '© <a href="https://osm.org/copyright">OpenStreetMap</a>'
     });
 
-    const map1 = L.map('map1', { layers: [osmL], center: center, zoom: 15 });
-    const map2 = L.map('map2', { layers: [osmR], center: center, zoom: 15, zoomControl: false });
+    const map1 = L.map('map1', {
+        layers: [osmL],
+        center: center,
+        zoom: 15,
+        preferCanvas: true,
+        maxZoom: 22,
+    });
+    const map2 = L.map('map2', {
+        layers: [osmR],
+        center: center,
+        zoom: 15,
+        zoomControl: false,
+        preferCanvas: true,
+        maxZoom: 22,
+    });
 
     // Synchronise pan & zoom
     map1.sync(map2);
     map2.sync(map1);
 
     // Tile layers for drone imagery
-    var leftLayer  = L.tileLayer(tileUrl(dateKeyLeft),  {
-        tms: true, opacity: 1.0,
-        minZoom: 14, maxNativeZoom: 21, maxZoom: 28,
-        errorTileUrl: '', edgeBufferTiles: 1
+    let leftLayer  = L.tileLayer(tileUrl(dateKeyLeft),  {
+        tms: true,
+        opacity: 1.0,
+        minZoom: 13,
+        maxNativeZoom: 21,
+        maxZoom: 22,
+        keepBuffer: 1,
+        updateWhenIdle: true,
+        updateWhenZooming: false,
     }).addTo(map1);
 
-    var rightLayer = L.tileLayer(tileUrl(dateKeyRight), {
-        tms: true, opacity: 1.0,
-        minZoom: 14, maxNativeZoom: 21, maxZoom: 28,
-        errorTileUrl: '', edgeBufferTiles: 1
+    let rightLayer = L.tileLayer(tileUrl(dateKeyRight), {
+        tms: true,
+        opacity: 1.0,
+        minZoom: 13,
+        maxNativeZoom: 21,
+        maxZoom: 22,
+        keepBuffer: 1,
+        updateWhenIdle: true,
+        updateWhenZooming: false,
     }).addTo(map2);
 
     // Layer controls
@@ -433,8 +456,21 @@
             alert('No flight data found for one of the selected dates.');
             return;
         }
-        leftLayer.setUrl(urlL);
-        rightLayer.setUrl(urlR);
+        // Remove old layers fully before adding new ones to free memory
+        map1.removeLayer(leftLayer);
+        map2.removeLayer(rightLayer);
+
+        leftLayer = L.tileLayer(urlL, {
+            tms: true, opacity: 1.0,
+            minZoom: 13, maxNativeZoom: 21, maxZoom: 22,
+            keepBuffer: 1, updateWhenIdle: true, updateWhenZooming: false,
+        }).addTo(map1);
+
+        rightLayer = L.tileLayer(urlR, {
+            tms: true, opacity: 1.0,
+            minZoom: 13, maxNativeZoom: 21, maxZoom: 22,
+            keepBuffer: 1, updateWhenIdle: true, updateWhenZooming: false,
+        }).addTo(map2);
 
         // Update labels
         document.getElementById('label-left').innerHTML  = '◀ ' + dateKeyToPickerDate(dateKeyLeft);
