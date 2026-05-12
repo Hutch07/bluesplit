@@ -1,0 +1,148 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Log Flight | BlueSplit</title>
+    <link rel="stylesheet" href="{% static 'core/css/login.css' %}">
+    <style>
+        /* Extend login.css for flight form specifics */
+        .pilot-display {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid rgba(13, 26, 44, 0.18);
+            border-radius: 12px;
+            font-size: 1rem;
+            background: rgba(15, 110, 203, 0.06);
+            color: #444;
+            box-sizing: border-box;
+        }
+        select {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid rgba(13, 26, 44, 0.18);
+            border-radius: 12px;
+            font-size: 1rem;
+            outline: none;
+            background: white;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            box-sizing: border-box;
+        }
+        select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(15, 110, 203, 0.12);
+        }
+        .errorlist {
+            color: #c0392b;
+            font-size: 0.85rem;
+            margin: 6px 0 0 0;
+            padding: 0;
+            list-style: none;
+        }
+        .messages {
+            margin-bottom: 16px;
+            padding: 0;
+        }
+        .messages li {
+            padding: 10px 14px;
+            border-radius: 10px;
+            list-style: none;
+            margin-bottom: 8px;
+            font-size: 0.93rem;
+        }
+        .messages li.error   { background: #fde8e8; color: #c0392b; }
+        .messages li.success { background: #e6f4ea; color: #1e7e34; }
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 8px;
+        }
+        .btn-row button {
+            flex: 1;
+            margin-top: 0;
+        }
+        a.cancel-btn {
+            flex: 1;
+            padding: 14px 16px;
+            background: rgba(13, 26, 44, 0.08);
+            color: #1b2430;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-align: center;
+            text-decoration: none;
+            transition: background 0.2s ease;
+        }
+        a.cancel-btn:hover {
+            background: rgba(13, 26, 44, 0.15);
+        }
+        .login-card h1 {
+            font-size: 1.6rem;
+        }
+        .signed-in {
+            font-size: 0.88rem;
+            color: #555;
+            margin: -10px 0 20px;
+        }
+        .signed-in a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+        .signed-in a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="login-page">
+        <div class="login-card">
+            <h1>Log a Flight</h1>
+            <p class="signed-in">Signed in as {{ request.user.username }} &nbsp;·&nbsp; <a href="{% url 'logout' %}">Logout</a></p>
+
+            {% if messages %}
+                <ul class="messages">
+                    {% for message in messages %}
+                        <li class="{{ message.tags }}">{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                <div class="field">
+                    <label>Pilot</label>
+                    <div class="pilot-display">{{ request.user.get_full_name|default:request.user.username }}</div>
+                </div>
+
+                <div class="field">
+                    <label for="{{ form.site.id_for_label }}">{{ form.site.label }}</label>
+                    {{ form.site }}
+                    {% if form.site.errors %}
+                        <ul class="errorlist">{% for e in form.site.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                    {% endif %}
+                </div>
+
+                <div class="field">
+                    <label for="{{ form.aws_url.id_for_label }}">{{ form.aws_url.label }}</label>
+                    {{ form.aws_url }}
+                    {% if form.aws_url.errors %}
+                        <ul class="errorlist">{% for e in form.aws_url.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                    {% endif %}
+                </div>
+
+                <div class="field">
+                    <label for="{{ form.date.id_for_label }}">{{ form.date.label }}</label>
+                    {{ form.date }}
+                    {% if form.date.errors %}
+                        <ul class="errorlist">{% for e in form.date.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                    {% endif %}
+                </div>
+
+                <div class="btn-row">
+                    <button type="submit">Log Flight</button>
+                    <a href="{% url 'dashboard' %}" class="cancel-btn">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,10 +1,11 @@
 from django.contrib.auth import views as auth_views
 from django.urls import path
-from .views import dashboard, home
+from .views import dashboard, home, add_flight
 
 urlpatterns = [
     path('', home, name='home'),
     path('dashboard/', dashboard, name='dashboard'),
+    path('flights/add/', add_flight, name='add_flight'),
     path('accounts/login/', auth_views.LoginView.as_view(template_name='registration/login.html', redirect_authenticated_user=True), name='login'),
     path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('accounts/password_reset/', auth_views.PasswordResetView.as_view(template_name='registration/password_reset_form.html'), name='password_reset'),
