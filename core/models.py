@@ -50,6 +50,7 @@ class Site(models.Model):
 class Flight(models.Model):
     site = models.ForeignKey(Site, on_delete=models.CASCADE, related_name='flights')
     aws_url = models.CharField('AWS URL', max_length=500, unique=True)
+    #https://ssi-maptiles.s3.us-east-2.amazonaws.com/GHIB/2026_0421/
     date = models.DateField('Date')
     pilot = models.CharField('Pilot', max_length=32)
 
