@@ -4,50 +4,372 @@
     <meta charset="utf-8">
     <title>Dashboard | BlueSplit</title>
     <style>
+        *, *::before, *::after { box-sizing: border-box; }
+
         body {
             margin: 0;
-            min-height: 100vh;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
             font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             color: #1b2430;
             background: url("/static/core/images/BWB_Drone.png") no-repeat center center fixed;
             background-size: cover;
         }
+
+        /* ── Top header bar ── */
         header {
-            padding: 5px;
-            background: rgba(250, 253, 171, 0.9);
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 20px;
+            background: rgba(250, 253, 171, 0.93);
+            backdrop-filter: blur(6px);
+            border-bottom: 1px solid rgba(0,0,0,0.08);
+            gap: 12px;
         }
-        h1 {
-            text-align: left;
-            margin-top: 5px;
+        .header-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            white-space: nowrap;
         }
-        p {
-            text-align: center;
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
         }
-        .dashboard-content {
-            padding: 20px;
-            background: rgba(255, 255, 255, 0.9);
-            margin: 20px auto;
-            max-width: 800px;
+        .header-actions a {
+            font-size: 0.88rem;
+            color: #0f6ecb;
+            text-decoration: none;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .header-actions a:hover { text-decoration: underline; }
+        .header-user {
+            font-size: 0.88rem;
+            color: #444;
+            white-space: nowrap;
+        }
+        .header-user a {
+            color: #c0392b;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .header-user a:hover { text-decoration: underline; }
+
+        /* ── Main layout: sidebar + content ── */
+        .layout {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* ── Sidebar ── */
+        .sidebar {
+            width: 240px;
+            flex-shrink: 0;
+            background: rgba(15, 22, 36, 0.82);
+            backdrop-filter: blur(12px);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border-right: 1px solid rgba(255,255,255,0.08);
+        }
+        .sidebar-header {
+            padding: 16px 16px 10px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.4);
+            flex-shrink: 0;
+        }
+        .site-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 8px 16px;
+        }
+        .site-list::-webkit-scrollbar { width: 4px; }
+        .site-list::-webkit-scrollbar-track { background: transparent; }
+        .site-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+
+        .site-item {
+            display: block;
+            padding: 10px 12px;
             border-radius: 8px;
+            color: rgba(255,255,255,0.75);
+            text-decoration: none;
+            font-size: 0.93rem;
+            font-weight: 500;
+            transition: background 0.15s, color 0.15s;
+            margin-bottom: 2px;
+        }
+        .site-item:hover {
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+        .site-item.active {
+            background: rgba(15, 110, 203, 0.55);
+            color: white;
+        }
+        .site-item .site-coords {
+            display: block;
+            font-size: 0.74rem;
+            color: rgba(255,255,255,0.4);
+            margin-top: 2px;
+            font-weight: 400;
+        }
+        .no-sites {
+            padding: 12px;
+            color: rgba(255,255,255,0.4);
+            font-size: 0.85rem;
+            font-style: italic;
+        }
+
+        /* ── Main content panel ── */
+        .main {
+            flex: 1;
+            overflow-y: auto;
+            padding: 28px 32px;
+        }
+
+        .welcome-card {
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 28px 32px;
+            max-width: 720px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+        }
+        .welcome-card h1 {
+            margin: 0 0 6px;
+            font-size: 1.5rem;
+            letter-spacing: -0.03em;
+        }
+        .welcome-card .subtitle {
+            color: #666;
+            font-size: 0.93rem;
+            margin: 0 0 24px;
+        }
+
+        /* Site detail card */
+        .site-card {
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 28px 32px;
+            max-width: 720px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+        }
+        .site-card h2 {
+            margin: 0 0 4px;
+            font-size: 1.4rem;
+            letter-spacing: -0.02em;
+        }
+        .site-card .coords {
+            color: #888;
+            font-size: 0.85rem;
+            margin: 0 0 20px;
+        }
+        .detail-row {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .detail-chip {
+            background: rgba(15, 110, 203, 0.08);
+            border: 1px solid rgba(15, 110, 203, 0.18);
+            border-radius: 8px;
+            padding: 8px 14px;
+            font-size: 0.85rem;
+        }
+        .detail-chip strong {
+            display: block;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #888;
+            margin-bottom: 2px;
+        }
+
+        .section-label {
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #999;
+            margin: 0 0 10px;
+        }
+
+        /* Flights table */
+        .flights-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        .flights-table th {
+            text-align: left;
+            padding: 8px 12px;
+            border-bottom: 2px solid #e8eaf0;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #888;
+        }
+        .flights-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #f0f2f6;
+            color: #1b2430;
+        }
+        .flights-table tr:last-child td { border-bottom: none; }
+        .flights-table tr:hover td { background: rgba(15, 110, 203, 0.04); }
+        .no-flights {
+            color: #aaa;
+            font-style: italic;
+            font-size: 0.9rem;
+            padding: 12px 0;
+        }
+
+        /* Allowed users pills */
+        .user-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .user-pill {
+            background: #f0f4ff;
+            border: 1px solid #ccd6f6;
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: 0.82rem;
+            color: #1b2430;
         }
     </style>
 </head>
 <body>
+
+    <!-- Header -->
     <header>
-        <p>Signed in as {{ request.user.username }}. <a href="{% url 'logout' %}">Logout</a></p>
+        <span class="header-title">BlueSplit</span>
+        <div class="header-actions">
+            {% if is_admin %}
+                <a href="/admin/">Admin Panel</a>
+            {% endif %}
+            {% if is_pilot_or_admin %}
+                <a href="{% url 'add_flight' %}">Log a Flight</a>
+                <a href="{% url 'site_access' %}">Manage Site Access</a>
+            {% endif %}
+            <a href="{% url 'home' %}">Home</a>
+        </div>
+        <span class="header-user">
+            {{ request.user.username }} &nbsp;·&nbsp; <a href="{% url 'logout' %}">Logout</a>
+        </span>
     </header>
 
-    <div class="dashboard-content">
-        <h1>Dashboard</h1>
-        <p>Welcome, {{ request.user.username }}. This page requires login.</p>
-        {% if is_admin %}
-            <p><a href="/admin/">Go to Admin Page</a></p>
-        {% endif %}
-        {% if is_pilot_or_admin %}
-            <p><a href="{% url 'add_flight' %}">Log a Flight</a></p>
-            <p><a href="{% url 'site_access' %}">Manage Site Access</a></p>
-        {% endif %}
-        <p><a href="{% url 'home' %}">Home</a></p>
+    <div class="layout">
+
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                {% if is_pilot_or_admin %}All Sites{% else %}My Sites{% endif %}
+            </div>
+            <div class="site-list">
+                {% if sites %}
+                    {% for site in sites %}
+                        <a href="?site={{ site.pk }}"
+                           class="site-item {% if selected_site.pk == site.pk %}active{% endif %}">
+                            {{ site.name }}
+                            <span class="site-coords">{{ site.latitude|floatformat:4 }}, {{ site.longitude|floatformat:4 }}</span>
+                        </a>
+                    {% endfor %}
+                {% else %}
+                    <p class="no-sites">No sites available.</p>
+                {% endif %}
+            </div>
+        </nav>
+
+        <!-- Main content -->
+        <main class="main">
+
+            {% if selected_site %}
+                <div class="site-card">
+                    <h2>{{ selected_site.name }}</h2>
+                    <p class="coords">{{ selected_site.latitude }}, {{ selected_site.longitude }}</p>
+
+                    <div class="detail-row">
+                        <div class="detail-chip">
+                            <strong>Flights</strong>
+                            {{ selected_site.flights.count }}
+                        </div>
+                        <div class="detail-chip">
+                            <strong>Allowed Users</strong>
+                            {{ selected_site.allowed_users.count }}
+                        </div>
+                    </div>
+
+                    <!-- Flights -->
+                    <p class="section-label">Flight Log</p>
+                    {% if selected_site.flights.all %}
+                        <table class="flights-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Pilot</th>
+                                    <th>AWS URL</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for flight in selected_site.flights.all %}
+                                    <tr>
+                                        <td>{{ flight.date }}</td>
+                                        <td>{{ flight.pilot }}</td>
+                                        <td><a href="{{ flight.aws_url }}" target="_blank" rel="noopener">View</a></td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <p class="no-flights">No flights logged for this site yet.</p>
+                    {% endif %}
+
+                    <!-- Allowed users — pilots/admins only -->
+                    {% if is_pilot_or_admin %}
+                        <p class="section-label" style="margin-top: 24px;">Allowed Users</p>
+                        {% if selected_site.allowed_users.all %}
+                            <div class="user-pills">
+                                {% for u in selected_site.allowed_users.all %}
+                                    <span class="user-pill">{{ u.username }}</span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="no-flights">No users assigned to this site yet.</p>
+                        {% endif %}
+                    {% endif %}
+                </div>
+
+            {% else %}
+                <div class="welcome-card">
+                    <h1>Welcome, {{ request.user.get_full_name|default:request.user.username }}.</h1>
+                    <p class="subtitle">
+                        {% if is_pilot_or_admin %}
+                            Select a site from the left to view its flight log and details.
+                        {% else %}
+                            Select a site from the left to view your available flights.
+                            {% if not sites %}
+                                You have not been granted access to any sites yet. Contact your administrator.
+                            {% endif %}
+                        {% endif %}
+                    </p>
+                </div>
+            {% endif %}
+
+        </main>
     </div>
+
 </body>
 </html>
