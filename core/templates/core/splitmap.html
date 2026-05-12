@@ -214,6 +214,11 @@
         #map1 { border-right: 2px solid rgba(59,130,246,0.6); }
         #map2 { border-left:  2px solid rgba(16,185,129,0.6); }
 
+        /* Hide Leaflet zoom controls */
+        .leaflet-control-zoom {
+            display: none !important;
+        }
+
         /* Map label overlays */
         .map-label {
             position: absolute;
@@ -227,12 +232,12 @@
             backdrop-filter: blur(6px);
         }
         #label-left {
-            left: calc(10px);
+            left: 10px;
             background: rgba(59,130,246,0.85);
             color: white;
         }
         #label-right {
-            right: calc(10px);
+            left: 10px;
             background: rgba(16,185,129,0.85);
             color: white;
         }
@@ -338,10 +343,12 @@
 
         <!-- Maps -->
         <div id="maps-area">
-            <div class="map-label" id="label-left">◀ {{ flight_left.date }}</div>
-            <div class="map-label" id="label-right">{{ flight_right.date }} ▶</div>
-            <div id="map1"></div>
-            <div id="map2"></div>
+            <div id="map1">
+                <div class="map-label" id="label-left">◀ {{ flight_left.date }}</div>
+            </div>
+            <div id="map2">
+                <div class="map-label" id="label-right">▶ {{ flight_right.date }}</div>
+            </div>
         </div>
 
     </div>
@@ -485,7 +492,7 @@
         rightLayer = L.tileLayer(urlR, TILE_OPTS).addTo(map2);
 
         document.getElementById('label-left').innerHTML   = '◀ ' + dateKeyToPickerDate(dateKeyLeft);
-        document.getElementById('label-right').innerHTML  = dateKeyToPickerDate(dateKeyRight) + ' ▶';
+        document.getElementById('label-right').innerHTML  = '▶ ' + dateKeyToPickerDate(dateKeyRight);
         document.getElementById('active-left').textContent  = dateKeyToPickerDate(dateKeyLeft);
         document.getElementById('active-right').textContent = dateKeyToPickerDate(dateKeyRight);
         highlightFlightList();
