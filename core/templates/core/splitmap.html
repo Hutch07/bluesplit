@@ -347,21 +347,70 @@
     </div>
 
     <script>
-    // ── Map initialisation ──────────────────────────────────────────────────
+    // ── Helpers ─────────────────────────────────────────────────────────────
 
     function tileUrl(dateKey) {
         const base = FLIGHT_DICT[dateKey];
-        if (!base) return null;
+        if (!base) return 'about:blank'; // safe fallback — no tiles requested
         return base.replace(/\/?$/, '/') + '{z}/{x}/{y}.png';
     }
 
+    function dateKeyToPickerDate(key) {
+        // "2026_0422" → "2026-04-22"
+        return key.substring(0,4) + '-' + key.substring(5,7) + '-' + key.substring(7,9);
+    }
+    function pickerDateToKey(d) {
+        // "2026-04-22" → "2026_0422"
+        return d.substring(0,4) + '_' + d.substring(5,7) + d.substring(8,10);
+    }
+    function enableFlightDays(date) {
+        const s = $.datepicker.formatDate('yy-mm-dd', date);
+        return [FLIGHT_DATES.includes(s), ''];
+    }
+    function highlightFlightList() {
+        document.querySelectorAll('#flight-list li').forEach(li => {
+            li.classList.remove('flt-left', 'flt-right');
+            if (li.dataset.key === dateKeyLeft)  li.classList.add('flt-left');
+            if (li.dataset.key === dateKeyRight) li.classList.add('flt-right');
+        });
+    }
+    function setLeftDate(key) {
+        dateKeyLeft = key;
+        if (typeof $ !== 'undefined')
+            $('#datepicker-left').datepicker('setDate', dateKeyToPickerDate(key));
+        highlightFlightList();
+    }
+
+    // ── Tile layer options (shared) ──────────────────────────────────────────
+    const TILE_OPTS = {
+        tms: true,
+        opacity: 1.0,
+        minZoom: 13,
+        maxNativeZoom: 21,
+        maxZoom: 22,
+        keepBuffer: 1,
+        updateWhenIdle: true,
+        updateWhenZooming: false,
+    };
+
+    // ── Module-level references (set in initMaps) ────────────────────────────
+    let map1, map2, leftLayer, rightLayer;
     const center = [SITE_LAT, SITE_LNG];
 
-    // Defer init until the browser has painted and map divs have real pixel dimensions
-    let map1, map2, leftLayer, rightLayer;
-
+    // ── Defer init until browser has painted and containers have real px size ─
     window.addEventListener('load', function() {
         requestAnimationFrame(function() {
+            // Confirm containers have real dimensions before handing off to Leaflet
+            const m1 = document.getElementById('map1');
+            const m2 = document.getElementById('map2');
+            console.log('map1 size:', m1.offsetWidth, 'x', m1.offsetHeight);
+            console.log('map2 size:', m2.offsetWidth, 'x', m2.offsetHeight);
+            if (m1.offsetWidth === 0 || m1.offsetHeight === 0) {
+                console.error('Map container has zero dimensions — aborting init to prevent memory crash.');
+                document.getElementById('map1').innerHTML =
+                    '<p style="color:red;padding:20px">Map container has no size. Check CSS layout.</p>';
+                return;
+            }
             initMaps();
         });
     });
@@ -377,82 +426,33 @@
         });
 
         map1 = L.map('map1', {
-            layers: [osmL],
-            center: center,
-            zoom: 15,
-            preferCanvas: true,
-            maxZoom: 22,
+            layers: [osmL], center: center, zoom: 15,
+            preferCanvas: true, maxZoom: 22,
         });
         map2 = L.map('map2', {
-            layers: [osmR],
-            center: center,
-            zoom: 15,
-            zoomControl: false,
-            preferCanvas: true,
-            maxZoom: 22,
+            layers: [osmR], center: center, zoom: 15,
+            zoomControl: false, preferCanvas: true, maxZoom: 22,
         });
 
-        // Force Leaflet to measure the real container size before loading tiles
         map1.invalidateSize({ animate: false });
         map2.invalidateSize({ animate: false });
 
-        // Synchronise pan & zoom
         map1.sync(map2);
         map2.sync(map1);
 
-    // Tile layers for drone imagery
-    let leftLayer  = L.tileLayer(tileUrl(dateKeyLeft),  {
-        tms: true,
-        opacity: 1.0,
-        minZoom: 13,
-        maxNativeZoom: 21,
-        maxZoom: 22,
-        keepBuffer: 1,
-        updateWhenIdle: true,
-        updateWhenZooming: false,
-    }).addTo(map1);
+        // Only add drone imagery if we have a valid URL
+        const urlL = tileUrl(dateKeyLeft);
+        const urlR = tileUrl(dateKeyRight);
+        console.log('Left tile URL:', urlL);
+        console.log('Right tile URL:', urlR);
 
-    let rightLayer = L.tileLayer(tileUrl(dateKeyRight), {
-        tms: true,
-        opacity: 1.0,
-        minZoom: 13,
-        maxNativeZoom: 21,
-        maxZoom: 22,
-        keepBuffer: 1,
-        updateWhenIdle: true,
-        updateWhenZooming: false,
-    }).addTo(map2);
+        leftLayer  = L.tileLayer(urlL, TILE_OPTS).addTo(map1);
+        rightLayer = L.tileLayer(urlR, TILE_OPTS).addTo(map2);
 
-    // Layer controls
-    const baseMapsL    = { "OpenStreetMap": osmL };
-    const overlayMapsL = { "Orthomosaic": leftLayer };
-    const baseMapsR    = { "OpenStreetMap": osmR };
-    const overlayMapsR = { "Orthomosaic": rightLayer };
-    L.control.layers(baseMapsL, overlayMapsL).addTo(map1);
-    L.control.layers(baseMapsR, overlayMapsR).addTo(map2);
+        L.control.layers({ "OpenStreetMap": osmL }, { "Orthomosaic": leftLayer  }).addTo(map1);
+        L.control.layers({ "OpenStreetMap": osmR }, { "Orthomosaic": rightLayer }).addTo(map2);
 
-    highlightFlightList();
-    } // end initMaps()
-
-    // ── Date pickers ────────────────────────────────────────────────────────
-
-    function dateKeyToPickerDate(key) {
-        // "2026_0422" → "2026-04-22"
-        const year = key.substring(0, 4);
-        const mo   = key.substring(5, 7);
-        const dy   = key.substring(7, 9);
-        return year + '-' + mo + '-' + dy;
-    }
-    function pickerDateToKey(d) {
-        // "2026-04-22" → "2026_0422"
-        return d.substring(0,4) + '_' + d.substring(5,7) + d.substring(8,10);
-    }
-    function enableFlightDays(date) {
-        const s = $.datepicker.formatDate('yy-mm-dd', date);
-        return [FLIGHT_DATES.includes(s), ''];
-    }
-
-    $(function() {
+        // Init date pickers
         $('#datepicker-left').datepicker({
             changeMonth: true, changeYear: true,
             dateFormat: 'yy-mm-dd',
@@ -466,64 +466,34 @@
             beforeShowDay: enableFlightDays,
             onSelect: function(d) { dateKeyRight = pickerDateToKey(d); }
         }).datepicker('setDate', dateKeyToPickerDate(dateKeyRight));
-    });
 
-    // ── Update tiles on button click ────────────────────────────────────────
+        highlightFlightList();
+    } // end initMaps()
 
+    // ── Update tiles on button click ─────────────────────────────────────────
     function updateTiles() {
+        if (!map1 || !map2) { alert('Map not ready yet.'); return; }
         const urlL = tileUrl(dateKeyLeft);
         const urlR = tileUrl(dateKeyRight);
-        if (!urlL || !urlR) {
+        if (urlL === 'about:blank' || urlR === 'about:blank') {
             alert('No flight data found for one of the selected dates.');
             return;
         }
-        // Remove old layers fully before adding new ones to free memory
         map1.removeLayer(leftLayer);
         map2.removeLayer(rightLayer);
+        leftLayer  = L.tileLayer(urlL, TILE_OPTS).addTo(map1);
+        rightLayer = L.tileLayer(urlR, TILE_OPTS).addTo(map2);
 
-        leftLayer = L.tileLayer(urlL, {
-            tms: true, opacity: 1.0,
-            minZoom: 13, maxNativeZoom: 21, maxZoom: 22,
-            keepBuffer: 1, updateWhenIdle: true, updateWhenZooming: false,
-        }).addTo(map1);
-
-        rightLayer = L.tileLayer(urlR, {
-            tms: true, opacity: 1.0,
-            minZoom: 13, maxNativeZoom: 21, maxZoom: 22,
-            keepBuffer: 1, updateWhenIdle: true, updateWhenZooming: false,
-        }).addTo(map2);
-
-        // Update labels
-        document.getElementById('label-left').innerHTML  = '◀ ' + dateKeyToPickerDate(dateKeyLeft);
-        document.getElementById('label-right').innerHTML = dateKeyToPickerDate(dateKeyRight) + ' ▶';
+        document.getElementById('label-left').innerHTML   = '◀ ' + dateKeyToPickerDate(dateKeyLeft);
+        document.getElementById('label-right').innerHTML  = dateKeyToPickerDate(dateKeyRight) + ' ▶';
         document.getElementById('active-left').textContent  = dateKeyToPickerDate(dateKeyLeft);
         document.getElementById('active-right').textContent = dateKeyToPickerDate(dateKeyRight);
-
         highlightFlightList();
     }
 
-    // ── Flight list helpers ──────────────────────────────────────────────────
-
-    function setLeftDate(key) {
-        dateKeyLeft = key;
-        $('#datepicker-left').datepicker('setDate', dateKeyToPickerDate(key));
-        highlightFlightList();
-    }
-
-    function highlightFlightList() {
-        document.querySelectorAll('#flight-list li').forEach(li => {
-            li.classList.remove('flt-left', 'flt-right');
-            if (li.dataset.key === dateKeyLeft)  li.classList.add('flt-left');
-            if (li.dataset.key === dateKeyRight) li.classList.add('flt-right');
-        });
-    }
-    highlightFlightList(); // called inside initMaps() on load
-
-    // ── Sidebar toggle ───────────────────────────────────────────────────────
-
+    // ── Sidebar toggle ────────────────────────────────────────────────────────
     document.getElementById('sidebar-toggle').addEventListener('click', function() {
         document.getElementById('sidebar').classList.toggle('collapsed');
-        // Give Leaflet a moment to recalculate map size after sidebar animates
         setTimeout(function() {
             if (map1) map1.invalidateSize();
             if (map2) map2.invalidateSize();
