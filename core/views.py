@@ -21,28 +21,15 @@ def dashboard(request):
     _is_pilot_or_admin = is_pilot_or_admin(user)
     _is_admin = user.is_superuser or user.group.filter(name='Admin').exists()
 
-    # Pilots and admins see all sites; customers/general see only their allowed sites
     if _is_pilot_or_admin:
         sites = Site.objects.all().order_by('name')
     else:
         sites = user.allowed_sites.all().order_by('name')
 
-    # Selected site from query param
-    selected_site = None
-    site_id = request.GET.get('site')
-    if site_id:
-        try:
-            candidate = Site.objects.get(pk=site_id)
-            if _is_pilot_or_admin or candidate in sites:
-                selected_site = candidate
-        except Site.DoesNotExist:
-            pass
-
     return render(request, 'core/dashboard.html', {
         'is_admin': _is_admin,
         'is_pilot_or_admin': _is_pilot_or_admin,
         'sites': sites,
-        'selected_site': selected_site,
     })
 
 

@@ -153,119 +153,7 @@
         .welcome-card .subtitle {
             color: #666;
             font-size: 0.93rem;
-            margin: 0 0 24px;
-        }
-
-        /* Site detail card */
-        .site-card {
-            background: rgba(255,255,255,0.92);
-            backdrop-filter: blur(10px);
-            border-radius: 16px;
-            padding: 28px 32px;
-            max-width: 720px;
-            box-shadow: 0 4px 24px rgba(0,0,0,0.12);
-        }
-        .site-card h2 {
-            margin: 0 0 4px;
-            font-size: 1.4rem;
-            letter-spacing: -0.02em;
-        }
-        .site-card .coords {
-            color: #888;
-            font-size: 0.85rem;
-            margin: 0 0 20px;
-        }
-        .detail-row {
-            display: flex;
-            gap: 16px;
-            flex-wrap: wrap;
-            margin-bottom: 20px;
-        }
-        .detail-chip {
-            background: rgba(15, 110, 203, 0.08);
-            border: 1px solid rgba(15, 110, 203, 0.18);
-            border-radius: 8px;
-            padding: 8px 14px;
-            font-size: 0.85rem;
-        }
-        .detail-chip strong {
-            display: block;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            color: #888;
-            margin-bottom: 2px;
-        }
-
-        .section-label {
-            font-size: 0.78rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: #999;
-            margin: 0 0 10px;
-        }
-
-        /* Flights table */
-        .flights-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.9rem;
-        }
-        .flights-table th {
-            text-align: left;
-            padding: 8px 12px;
-            border-bottom: 2px solid #e8eaf0;
-            font-size: 0.78rem;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            color: #888;
-        }
-        .flights-table td {
-            padding: 10px 12px;
-            border-bottom: 1px solid #f0f2f6;
-            color: #1b2430;
-        }
-        .flights-table tr:last-child td { border-bottom: none; }
-        .flights-table tr:hover td { background: rgba(15, 110, 203, 0.04); }
-        .no-flights {
-            color: #aaa;
-            font-style: italic;
-            font-size: 0.9rem;
-            padding: 12px 0;
-        }
-
-        /* Allowed users pills */
-        .user-pills {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-        .user-pill {
-            background: #f0f4ff;
-            border: 1px solid #ccd6f6;
-            border-radius: 20px;
-            padding: 4px 12px;
-            font-size: 0.82rem;
-            color: #1b2430;
-        }
-        .btn-open-map {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 18px;
-            background: #0f6ecb;
-            color: white;
-            border-radius: 8px;
-            font-size: 0.88rem;
-            font-weight: 600;
-            text-decoration: none;
-            transition: background 0.2s, transform 0.15s;
-            align-self: center;
-        }
-        .btn-open-map:hover {
-            background: #0d5ab2;
-            transform: translateY(-1px);
+            margin: 0;
         }
     </style>
 </head>
@@ -299,7 +187,7 @@
             <div class="site-list">
                 {% if sites %}
                     {% for site in sites %}
-                        <a href="?site={{ site.pk }}"
+                        <a href="{% url 'splitmap' site.pk %}"
                            class="site-item {% if selected_site.pk == site.pk %}active{% endif %}">
                             {{ site.name }}
                             <span class="site-coords">{{ site.latitude|floatformat:4 }}, {{ site.longitude|floatformat:4 }}</span>
@@ -313,84 +201,19 @@
 
         <!-- Main content -->
         <main class="main">
-
-            {% if selected_site %}
-                <div class="site-card">
-                    <h2>{{ selected_site.name }}</h2>
-                    <p class="coords">{{ selected_site.latitude }}, {{ selected_site.longitude }}</p>
-
-                    <div class="detail-row">
-                        <div class="detail-chip">
-                            <strong>Flights</strong>
-                            {{ selected_site.flights.count }}
-                        </div>
-                        <div class="detail-chip">
-                            <strong>Allowed Users</strong>
-                            {{ selected_site.allowed_users.count }}
-                        </div>
-                        {% if selected_site.flights.count >= 2 %}
-                            <a href="{% url 'splitmap' selected_site.pk %}" class="btn-open-map">
-                                🗺 Open Split Map
-                            </a>
-                        {% endif %}
-                    </div>
-
-                    <!-- Flights -->
-                    <p class="section-label">Flight Log</p>
-                    {% if selected_site.flights.all %}
-                        <table class="flights-table">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Pilot</th>
-                                    <th>AWS URL</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for flight in selected_site.flights.all %}
-                                    <tr>
-                                        <td>{{ flight.date }}</td>
-                                        <td>{{ flight.pilot }}</td>
-                                        <td><a href="{{ flight.aws_url }}" target="_blank" rel="noopener">View</a></td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    {% else %}
-                        <p class="no-flights">No flights logged for this site yet.</p>
-                    {% endif %}
-
-                    <!-- Allowed users — pilots/admins only -->
+            <div class="welcome-card">
+                <h1>Welcome, {{ request.user.get_full_name|default:request.user.username }}.</h1>
+                <p class="subtitle">
                     {% if is_pilot_or_admin %}
-                        <p class="section-label" style="margin-top: 24px;">Allowed Users</p>
-                        {% if selected_site.allowed_users.all %}
-                            <div class="user-pills">
-                                {% for u in selected_site.allowed_users.all %}
-                                    <span class="user-pill">{{ u.username }}</span>
-                                {% endfor %}
-                            </div>
-                        {% else %}
-                            <p class="no-flights">No users assigned to this site yet.</p>
+                        Select a site from the left to open its split map.
+                    {% else %}
+                        Select a site from the left to view your available flights.
+                        {% if not sites %}
+                            You have not been granted access to any sites yet. Contact your administrator.
                         {% endif %}
                     {% endif %}
-                </div>
-
-            {% else %}
-                <div class="welcome-card">
-                    <h1>Welcome, {{ request.user.get_full_name|default:request.user.username }}.</h1>
-                    <p class="subtitle">
-                        {% if is_pilot_or_admin %}
-                            Select a site from the left to view its flight log and details.
-                        {% else %}
-                            Select a site from the left to view your available flights.
-                            {% if not sites %}
-                                You have not been granted access to any sites yet. Contact your administrator.
-                            {% endif %}
-                        {% endif %}
-                    </p>
-                </div>
-            {% endif %}
-
+                </p>
+            </div>
         </main>
     </div>
 
