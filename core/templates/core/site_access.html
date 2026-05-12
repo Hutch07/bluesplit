@@ -1,0 +1,248 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Site Access | BlueSplit</title>
+    <link rel="stylesheet" href="{% static 'core/css/login.css' %}">
+    <style>
+        .login-card {
+            width: min(560px, 100%);
+        }
+        .login-card h1 {
+            font-size: 1.6rem;
+        }
+        .signed-in {
+            font-size: 0.88rem;
+            color: #555;
+            margin: -10px 0 20px;
+        }
+        .signed-in a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+        .signed-in a:hover { text-decoration: underline; }
+
+        select {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid rgba(13, 26, 44, 0.18);
+            border-radius: 12px;
+            font-size: 1rem;
+            outline: none;
+            background: white;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            box-sizing: border-box;
+        }
+        select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(15, 110, 203, 0.12);
+        }
+
+        /* User checklist */
+        .user-list {
+            max-height: 260px;
+            overflow-y: auto;
+            border: 1px solid rgba(13, 26, 44, 0.18);
+            border-radius: 12px;
+            padding: 8px 4px;
+            background: white;
+        }
+        .user-list li {
+            list-style: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            transition: background 0.15s;
+        }
+        .user-list li:hover {
+            background: rgba(15, 110, 203, 0.06);
+        }
+        .user-list label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 400;
+            font-size: 0.97rem;
+            cursor: pointer;
+            margin: 0;
+        }
+        .user-list input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--accent);
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .user-meta {
+            font-size: 0.8rem;
+            color: #888;
+            margin-left: auto;
+        }
+
+        /* Select all toggle */
+        .select-all-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 0.88rem;
+            color: #555;
+            cursor: pointer;
+        }
+        .select-all-row input {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--accent);
+        }
+
+        .current-count {
+            font-size: 0.85rem;
+            color: #666;
+            margin: 6px 0 10px;
+        }
+        .current-count strong {
+            color: var(--accent);
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 8px;
+        }
+        .btn-row button {
+            flex: 1;
+            margin-top: 0;
+        }
+        button.secondary {
+            background: rgba(13, 26, 44, 0.08);
+            color: #1b2430;
+        }
+        button.secondary:hover {
+            background: rgba(13, 26, 44, 0.15);
+            transform: translateY(-1px);
+        }
+        a.cancel-btn {
+            flex: 1;
+            padding: 14px 16px;
+            background: rgba(13, 26, 44, 0.08);
+            color: #1b2430;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-align: center;
+            text-decoration: none;
+            transition: background 0.2s ease;
+        }
+        a.cancel-btn:hover {
+            background: rgba(13, 26, 44, 0.15);
+        }
+
+        .messages {
+            margin-bottom: 16px;
+            padding: 0;
+        }
+        .messages li {
+            padding: 10px 14px;
+            border-radius: 10px;
+            list-style: none;
+            margin-bottom: 8px;
+            font-size: 0.93rem;
+        }
+        .messages li.error   { background: #fde8e8; color: #c0392b; }
+        .messages li.success { background: #e6f4ea; color: #1e7e34; }
+
+        .divider {
+            border: none;
+            border-top: 1px solid rgba(13, 26, 44, 0.1);
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-page">
+        <div class="login-card">
+            <h1>Manage Site Access</h1>
+            <p class="signed-in">Signed in as {{ request.user.username }} &nbsp;·&nbsp; <a href="{% url 'logout' %}">Logout</a></p>
+
+            {% if messages %}
+                <ul class="messages">
+                    {% for message in messages %}
+                        <li class="{{ message.tags }}">{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+
+            <!-- Step 1: Select a site -->
+            <form method="post" novalidate>
+                {% csrf_token %}
+                <div class="field">
+                    <label for="{{ form.site.id_for_label }}">Select Site</label>
+                    {{ form.site }}
+                </div>
+                <button type="submit" name="load_site" class="secondary">Load Site</button>
+            </form>
+
+            {% if selected_site %}
+                <hr class="divider">
+
+                <!-- Step 2: Manage users for selected site -->
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    <input type="hidden" name="site" value="{{ selected_site.pk }}">
+
+                    <p class="current-count">
+                        Managing access for <strong>{{ selected_site.name }}</strong> —
+                        <strong>{{ selected_site.allowed_users.count }}</strong> user{{ selected_site.allowed_users.count|pluralize }} currently allowed.
+                    </p>
+
+                    <div class="field">
+                        <label>Allowed Users</label>
+
+                        <div class="select-all-row">
+                            <input type="checkbox" id="select-all">
+                            <span>Select / deselect all</span>
+                        </div>
+
+                        <ul class="user-list" id="user-list">
+                            {% for user in form.allowed_users %}
+                                <li>
+                                    <label>
+                                        {{ user.tag }}
+                                        {{ user.choice_label }}
+                                        <span class="user-meta">{{ user.choice_label }}</span>
+                                    </label>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+
+                    <div class="btn-row">
+                        <button type="submit" name="save_access">Save Changes</button>
+                        <a href="{% url 'site_access' %}" class="cancel-btn">Cancel</a>
+                    </div>
+                </form>
+            {% endif %}
+
+            <div style="margin-top: 20px; text-align: center;">
+                <a href="{% url 'dashboard' %}" style="color: var(--accent); font-size: 0.9rem; text-decoration: none;">← Back to Dashboard</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Select all / deselect all toggle
+        const selectAll = document.getElementById('select-all');
+        if (selectAll) {
+            const checkboxes = () => document.querySelectorAll('#user-list input[type="checkbox"]');
+            selectAll.addEventListener('change', () => {
+                checkboxes().forEach(cb => cb.checked = selectAll.checked);
+            });
+            // Keep select-all in sync if individual boxes change
+            document.getElementById('user-list')?.addEventListener('change', () => {
+                const all = checkboxes();
+                selectAll.checked = all.length > 0 && [...all].every(cb => cb.checked);
+            });
+        }
+    </script>
+</body>
+</html>

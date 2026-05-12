@@ -7,14 +7,14 @@ class Group(models.Model):
     PILOT = 'Pilot'
     CUSTOMER = 'Customer'
     GENERAL = 'General'
-    
+
     GROUP_CHOICES = [
         (ADMIN, 'Admin'),
         (PILOT, 'Pilot'),
         (CUSTOMER, 'Customer'),
         (GENERAL, 'General'),
     ]
-    
+
     name = models.CharField('Name', max_length=20, choices=GROUP_CHOICES, unique=True)
 
     def __str__(self):
@@ -38,6 +38,12 @@ class Site(models.Model):
     name = models.CharField('Name', max_length=255, unique=True)
     longitude = models.FloatField('Longitude')
     latitude = models.FloatField('Latitude')
+    allowed_users = models.ManyToManyField(
+        'User',
+        related_name='allowed_sites',
+        blank=True,
+        verbose_name='Allowed Users',
+    )
 
     def __str__(self):
         return self.name
@@ -50,7 +56,6 @@ class Site(models.Model):
 class Flight(models.Model):
     site = models.ForeignKey(Site, on_delete=models.CASCADE, related_name='flights')
     aws_url = models.CharField('AWS URL', max_length=500, unique=True)
-    #https://ssi-maptiles.s3.us-east-2.amazonaws.com/GHIB/2026_0421/
     date = models.DateField('Date')
     pilot = models.CharField('Pilot', max_length=32)
 
