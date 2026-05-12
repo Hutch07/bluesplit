@@ -66,6 +66,7 @@
             top: 42px; bottom: 0;
             left: 0; right: 0;
             display: flex;
+            min-height: 0;
         }
 
         /* ── Sidebar panel ── */
@@ -201,11 +202,14 @@
             flex: 1;
             display: flex;
             position: relative;
+            min-height: 0; /* critical: allows flex child to shrink below content size */
         }
 
         #map1, #map2 {
             flex: 1;
-            height: 100%;
+            min-width: 0;
+            min-height: 0;
+            position: relative;
         }
         #map1 { border-right: 2px solid rgba(59,130,246,0.6); }
         #map2 { border-left:  2px solid rgba(16,185,129,0.6); }
@@ -353,34 +357,48 @@
 
     const center = [SITE_LAT, SITE_LNG];
 
-    const osmL = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 20,
-        attribution: '© <a href="https://osm.org/copyright">OpenStreetMap</a>'
-    });
-    const osmR = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 20,
-        attribution: '© <a href="https://osm.org/copyright">OpenStreetMap</a>'
+    // Defer init until the browser has painted and map divs have real pixel dimensions
+    let map1, map2, leftLayer, rightLayer;
+
+    window.addEventListener('load', function() {
+        requestAnimationFrame(function() {
+            initMaps();
+        });
     });
 
-    const map1 = L.map('map1', {
-        layers: [osmL],
-        center: center,
-        zoom: 15,
-        preferCanvas: true,
-        maxZoom: 22,
-    });
-    const map2 = L.map('map2', {
-        layers: [osmR],
-        center: center,
-        zoom: 15,
-        zoomControl: false,
-        preferCanvas: true,
-        maxZoom: 22,
-    });
+    function initMaps() {
+        const osmL = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 20,
+            attribution: '© <a href="https://osm.org/copyright">OpenStreetMap</a>'
+        });
+        const osmR = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 20,
+            attribution: '© <a href="https://osm.org/copyright">OpenStreetMap</a>'
+        });
 
-    // Synchronise pan & zoom
-    map1.sync(map2);
-    map2.sync(map1);
+        map1 = L.map('map1', {
+            layers: [osmL],
+            center: center,
+            zoom: 15,
+            preferCanvas: true,
+            maxZoom: 22,
+        });
+        map2 = L.map('map2', {
+            layers: [osmR],
+            center: center,
+            zoom: 15,
+            zoomControl: false,
+            preferCanvas: true,
+            maxZoom: 22,
+        });
+
+        // Force Leaflet to measure the real container size before loading tiles
+        map1.invalidateSize({ animate: false });
+        map2.invalidateSize({ animate: false });
+
+        // Synchronise pan & zoom
+        map1.sync(map2);
+        map2.sync(map1);
 
     // Tile layers for drone imagery
     let leftLayer  = L.tileLayer(tileUrl(dateKeyLeft),  {
@@ -406,12 +424,15 @@
     }).addTo(map2);
 
     // Layer controls
-    var baseMapsL    = { "OpenStreetMap": osmL };
-    var overlayMapsL = { "Orthomosaic": leftLayer };
-    var baseMapsR    = { "OpenStreetMap": osmR };
-    var overlayMapsR = { "Orthomosaic": rightLayer };
+    const baseMapsL    = { "OpenStreetMap": osmL };
+    const overlayMapsL = { "Orthomosaic": leftLayer };
+    const baseMapsR    = { "OpenStreetMap": osmR };
+    const overlayMapsR = { "Orthomosaic": rightLayer };
     L.control.layers(baseMapsL, overlayMapsL).addTo(map1);
     L.control.layers(baseMapsR, overlayMapsR).addTo(map2);
+
+    highlightFlightList();
+    } // end initMaps()
 
     // ── Date pickers ────────────────────────────────────────────────────────
 
@@ -496,7 +517,7 @@
             if (li.dataset.key === dateKeyRight) li.classList.add('flt-right');
         });
     }
-    highlightFlightList(); // run on load
+    highlightFlightList(); // called inside initMaps() on load
 
     // ── Sidebar toggle ───────────────────────────────────────────────────────
 
@@ -504,8 +525,8 @@
         document.getElementById('sidebar').classList.toggle('collapsed');
         // Give Leaflet a moment to recalculate map size after sidebar animates
         setTimeout(function() {
-            map1.invalidateSize();
-            map2.invalidateSize();
+            if (map1) map1.invalidateSize();
+            if (map2) map2.invalidateSize();
         }, 280);
     });
     </script>
