@@ -249,6 +249,24 @@
             font-size: 0.82rem;
             color: #1b2430;
         }
+        .btn-open-map {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 18px;
+            background: #0f6ecb;
+            color: white;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: background 0.2s, transform 0.15s;
+            align-self: center;
+        }
+        .btn-open-map:hover {
+            background: #0d5ab2;
+            transform: translateY(-1px);
+        }
     </style>
 </head>
 <body>
@@ -310,6 +328,11 @@
                             <strong>Allowed Users</strong>
                             {{ selected_site.allowed_users.count }}
                         </div>
+                        {% if selected_site.flights.count >= 2 %}
+                            <a href="{% url 'splitmap' selected_site.pk %}" class="btn-open-map">
+                                🗺 Open Split Map
+                            </a>
+                        {% endif %}
                     </div>
 
                     <!-- Flights -->

@@ -1,0 +1,477 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>{{ site.name }} | Split Map | BlueSplit</title>
+
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+    <!-- Leaflet.Sync (synchronized pan/zoom) -->
+    <script src="https://cdn.jsdelivr.net/npm/leaflet.sync@0.2.4/L.Map.Sync.js"></script>
+
+    <!-- jQuery + jQuery UI (datepicker) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous"/>
+
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+
+        html, body {
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            overflow: hidden;
+            font-family: Inter, system-ui, -apple-system, sans-serif;
+        }
+
+        /* ── Top bar ── */
+        #topbar {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 42px;
+            background: rgba(15, 22, 36, 0.92);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            padding: 0 14px;
+            gap: 14px;
+            z-index: 1100;
+            color: white;
+            font-size: 0.88rem;
+        }
+        #topbar .site-title {
+            font-weight: 700;
+            font-size: 0.95rem;
+            letter-spacing: -0.02em;
+            white-space: nowrap;
+        }
+        #topbar a {
+            color: rgba(255,255,255,0.65);
+            text-decoration: none;
+            font-size: 0.82rem;
+            transition: color 0.15s;
+        }
+        #topbar a:hover { color: white; }
+        #topbar .sep { color: rgba(255,255,255,0.25); }
+
+        /* ── Map layout ── */
+        #map-wrapper {
+            position: fixed;
+            top: 42px; bottom: 0;
+            left: 0; right: 0;
+            display: flex;
+        }
+
+        /* ── Sidebar panel ── */
+        #sidebar {
+            width: 260px;
+            flex-shrink: 0;
+            background: rgba(15, 22, 36, 0.93);
+            backdrop-filter: blur(12px);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            z-index: 1050;
+            border-right: 1px solid rgba(255,255,255,0.07);
+            transition: width 0.25s ease, opacity 0.25s ease;
+        }
+        #sidebar.collapsed {
+            width: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+        .sidebar-section {
+            padding: 16px 16px 0;
+        }
+        .sidebar-section h3 {
+            margin: 0 0 10px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.4);
+        }
+
+        /* Date labels */
+        .date-label-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .date-badge {
+            flex: 1;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+        }
+        .date-badge.left-badge  { background: rgba(59,130,246,0.3);  border: 1px solid rgba(59,130,246,0.5);  }
+        .date-badge.right-badge { background: rgba(16,185,129,0.3); border: 1px solid rgba(16,185,129,0.5); }
+        .date-badge small {
+            display: block;
+            font-size: 0.68rem;
+            font-weight: 400;
+            opacity: 0.7;
+            margin-bottom: 2px;
+        }
+
+        /* Date pickers */
+        .picker-row {
+            margin-bottom: 10px;
+        }
+        .picker-row label {
+            display: block;
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 4px;
+        }
+        .picker-row input {
+            width: 100%;
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.08);
+            color: white;
+            font-size: 0.88rem;
+            outline: none;
+        }
+        .picker-row input:focus {
+            border-color: #0f6ecb;
+            background: rgba(15,110,203,0.15);
+        }
+        /* Override jQuery UI datepicker colours */
+        .ui-datepicker { font-size: 0.82rem; z-index: 2000 !important; }
+
+        .btn-load {
+            width: 100%;
+            padding: 10px;
+            background: #0f6ecb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 12px;
+            transition: background 0.2s, transform 0.15s;
+        }
+        .btn-load:hover { background: #0d5ab2; transform: translateY(-1px); }
+        .btn-load:active { transform: translateY(0); }
+
+        /* Flight list */
+        .flight-list {
+            list-style: none;
+            margin: 0;
+            padding: 0 0 16px;
+        }
+        .flight-list li {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 7px 16px;
+            font-size: 0.82rem;
+            color: rgba(255,255,255,0.7);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .flight-list li:hover { background: rgba(255,255,255,0.07); color: white; }
+        .flight-list li .flt-date { font-weight: 600; }
+        .flight-list li .flt-pilot { font-size: 0.75rem; color: rgba(255,255,255,0.4); }
+        .flight-list li.flt-left  { background: rgba(59,130,246,0.18); color: #93c5fd; }
+        .flight-list li.flt-right { background: rgba(16,185,129,0.18); color: #6ee7b7; }
+
+        /* Divider */
+        .sdivider {
+            height: 1px;
+            background: rgba(255,255,255,0.08);
+            margin: 12px 0;
+        }
+
+        /* ── Maps area ── */
+        #maps-area {
+            flex: 1;
+            display: flex;
+            position: relative;
+        }
+
+        #map1, #map2 {
+            flex: 1;
+            height: 100%;
+        }
+        #map1 { border-right: 2px solid rgba(59,130,246,0.6); }
+        #map2 { border-left:  2px solid rgba(16,185,129,0.6); }
+
+        /* Map label overlays */
+        .map-label {
+            position: absolute;
+            top: 10px;
+            z-index: 900;
+            padding: 5px 14px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            pointer-events: none;
+            backdrop-filter: blur(6px);
+        }
+        #label-left {
+            left: calc(10px);
+            background: rgba(59,130,246,0.85);
+            color: white;
+        }
+        #label-right {
+            right: calc(10px);
+            background: rgba(16,185,129,0.85);
+            color: white;
+        }
+
+        /* Toggle sidebar button */
+        #sidebar-toggle {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1060;
+            background: rgba(15,22,36,0.88);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: white;
+            border-radius: 8px;
+            width: 34px;
+            height: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.2s;
+            /* sits in topbar */
+        }
+        #sidebar-toggle:hover { background: rgba(255,255,255,0.15); }
+    </style>
+
+    <script>
+        // Data injected from Django view
+        const SITE_LAT      = {{ site.latitude }};
+        const SITE_LNG      = {{ site.longitude }};
+        const SITE_NAME     = "{{ site.name|escapejs }}";
+        const FLIGHT_DICT   = {{ flight_dict_json|safe }};   // { "2026_0422": "https://.../" }
+        const FLIGHT_DATES  = {{ flight_dates_json|safe }};  // ["2026-04-22", ...]
+        let dateKeyLeft     = "{{ flight_left_key }}";       // e.g. "2026_0401"
+        let dateKeyRight    = "{{ flight_right_key }}";
+    </script>
+</head>
+<body>
+
+    <!-- Top bar -->
+    <div id="topbar">
+        <button id="sidebar-toggle" title="Toggle panel"><i class="fa fa-bars"></i></button>
+        <span class="site-title">{{ site.name }}</span>
+        <span class="sep">|</span>
+        <a href="{% url 'dashboard' %}?site={{ site.pk }}">← Dashboard</a>
+        <span class="sep">|</span>
+        <a href="{% url 'logout' %}">Logout</a>
+    </div>
+
+    <div id="map-wrapper">
+
+        <!-- Sidebar -->
+        <div id="sidebar">
+            <div class="sidebar-section">
+                <h3>Active Dates</h3>
+                <div class="date-label-row">
+                    <div class="date-badge left-badge">
+                        <small>Left</small>
+                        <span id="active-left">{{ flight_left.date }}</span>
+                    </div>
+                    <div class="date-badge right-badge">
+                        <small>Right</small>
+                        <span id="active-right">{{ flight_right.date }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h3>Change Dates</h3>
+                <div class="picker-row">
+                    <label>Left map date</label>
+                    <input type="text" id="datepicker-left" autocomplete="off" placeholder="Pick a date">
+                </div>
+                <div class="picker-row">
+                    <label>Right map date</label>
+                    <input type="text" id="datepicker-right" autocomplete="off" placeholder="Pick a date">
+                </div>
+                <button class="btn-load" onclick="updateTiles()">
+                    <i class="fa fa-plane"></i> Load Imagery
+                </button>
+            </div>
+
+            <div class="sdivider"></div>
+
+            <div class="sidebar-section">
+                <h3>All Flights</h3>
+            </div>
+            <ul class="flight-list" id="flight-list">
+                {% for flight in flights %}
+                    <li data-key="{{ flight.date|date:'Y_md' }}"
+                        id="flt-{{ flight.date|date:'Y_md' }}"
+                        onclick="setLeftDate('{{ flight.date|date:'Y_md' }}')">
+                        <span>
+                            <span class="flt-date">{{ flight.date }}</span><br>
+                            <span class="flt-pilot">{{ flight.pilot }}</span>
+                        </span>
+                        <i class="fa fa-arrow-left fa-xs" title="Set as Left"></i>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <!-- Maps -->
+        <div id="maps-area">
+            <div class="map-label" id="label-left">◀ {{ flight_left.date }}</div>
+            <div class="map-label" id="label-right">{{ flight_right.date }} ▶</div>
+            <div id="map1"></div>
+            <div id="map2"></div>
+        </div>
+
+    </div>
+
+    <script>
+    // ── Map initialisation ──────────────────────────────────────────────────
+
+    function tileUrl(dateKey) {
+        const base = FLIGHT_DICT[dateKey];
+        if (!base) return null;
+        return base.replace(/\/?$/, '/') + '{z}/{x}/{y}.png';
+    }
+
+    const center = [SITE_LAT, SITE_LNG];
+
+    const osmL = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 20,
+        attribution: '© <a href="https://osm.org/copyright">OpenStreetMap</a>'
+    });
+    const osmR = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 20,
+        attribution: '© <a href="https://osm.org/copyright">OpenStreetMap</a>'
+    });
+
+    const map1 = L.map('map1', { layers: [osmL], center: center, zoom: 15 });
+    const map2 = L.map('map2', { layers: [osmR], center: center, zoom: 15, zoomControl: false });
+
+    // Synchronise pan & zoom
+    map1.sync(map2);
+    map2.sync(map1);
+
+    // Tile layers for drone imagery
+    var leftLayer  = L.tileLayer(tileUrl(dateKeyLeft),  {
+        tms: true, opacity: 1.0,
+        minZoom: 14, maxNativeZoom: 21, maxZoom: 28,
+        errorTileUrl: '', edgeBufferTiles: 1
+    }).addTo(map1);
+
+    var rightLayer = L.tileLayer(tileUrl(dateKeyRight), {
+        tms: true, opacity: 1.0,
+        minZoom: 14, maxNativeZoom: 21, maxZoom: 28,
+        errorTileUrl: '', edgeBufferTiles: 1
+    }).addTo(map2);
+
+    // Layer controls
+    var baseMapsL    = { "OpenStreetMap": osmL };
+    var overlayMapsL = { "Orthomosaic": leftLayer };
+    var baseMapsR    = { "OpenStreetMap": osmR };
+    var overlayMapsR = { "Orthomosaic": rightLayer };
+    L.control.layers(baseMapsL, overlayMapsL).addTo(map1);
+    L.control.layers(baseMapsR, overlayMapsR).addTo(map2);
+
+    // ── Date pickers ────────────────────────────────────────────────────────
+
+    function dateKeyToPickerDate(key) {
+        // "2026_0422" → "2026-04-22"
+        const year = key.substring(0, 4);
+        const mo   = key.substring(5, 7);
+        const dy   = key.substring(7, 9);
+        return year + '-' + mo + '-' + dy;
+    }
+    function pickerDateToKey(d) {
+        // "2026-04-22" → "2026_0422"
+        return d.substring(0,4) + '_' + d.substring(5,7) + d.substring(8,10);
+    }
+    function enableFlightDays(date) {
+        const s = $.datepicker.formatDate('yy-mm-dd', date);
+        return [FLIGHT_DATES.includes(s), ''];
+    }
+
+    $(function() {
+        $('#datepicker-left').datepicker({
+            changeMonth: true, changeYear: true,
+            dateFormat: 'yy-mm-dd',
+            beforeShowDay: enableFlightDays,
+            onSelect: function(d) { dateKeyLeft = pickerDateToKey(d); }
+        }).datepicker('setDate', dateKeyToPickerDate(dateKeyLeft));
+
+        $('#datepicker-right').datepicker({
+            changeMonth: true, changeYear: true,
+            dateFormat: 'yy-mm-dd',
+            beforeShowDay: enableFlightDays,
+            onSelect: function(d) { dateKeyRight = pickerDateToKey(d); }
+        }).datepicker('setDate', dateKeyToPickerDate(dateKeyRight));
+    });
+
+    // ── Update tiles on button click ────────────────────────────────────────
+
+    function updateTiles() {
+        const urlL = tileUrl(dateKeyLeft);
+        const urlR = tileUrl(dateKeyRight);
+        if (!urlL || !urlR) {
+            alert('No flight data found for one of the selected dates.');
+            return;
+        }
+        leftLayer.setUrl(urlL);
+        rightLayer.setUrl(urlR);
+
+        // Update labels
+        document.getElementById('label-left').innerHTML  = '◀ ' + dateKeyToPickerDate(dateKeyLeft);
+        document.getElementById('label-right').innerHTML = dateKeyToPickerDate(dateKeyRight) + ' ▶';
+        document.getElementById('active-left').textContent  = dateKeyToPickerDate(dateKeyLeft);
+        document.getElementById('active-right').textContent = dateKeyToPickerDate(dateKeyRight);
+
+        highlightFlightList();
+    }
+
+    // ── Flight list helpers ──────────────────────────────────────────────────
+
+    function setLeftDate(key) {
+        dateKeyLeft = key;
+        $('#datepicker-left').datepicker('setDate', dateKeyToPickerDate(key));
+        highlightFlightList();
+    }
+
+    function highlightFlightList() {
+        document.querySelectorAll('#flight-list li').forEach(li => {
+            li.classList.remove('flt-left', 'flt-right');
+            if (li.dataset.key === dateKeyLeft)  li.classList.add('flt-left');
+            if (li.dataset.key === dateKeyRight) li.classList.add('flt-right');
+        });
+    }
+    highlightFlightList(); // run on load
+
+    // ── Sidebar toggle ───────────────────────────────────────────────────────
+
+    document.getElementById('sidebar-toggle').addEventListener('click', function() {
+        document.getElementById('sidebar').classList.toggle('collapsed');
+        // Give Leaflet a moment to recalculate map size after sidebar animates
+        setTimeout(function() {
+            map1.invalidateSize();
+            map2.invalidateSize();
+        }, 280);
+    });
+    </script>
+</body>
+</html>
