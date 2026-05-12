@@ -18,6 +18,17 @@ def is_pilot_or_admin(user):
         return True
     return False
 
+def is_admin(user):
+    if user.is_superuser:
+        return True
+    # Check custom core.Group
+    if user.group.filter(name__in=['Admin']).exists():
+        return True
+    # Fallback: check Django's built-in auth.Group
+    if user.groups.filter(name__in=['Admin']).exists():
+        return True
+    return False
+
 
 def home(request):
     context = {}
@@ -30,7 +41,7 @@ def home(request):
 def dashboard(request):
     user = request.user
     _is_pilot_or_admin = is_pilot_or_admin(user)
-    _is_admin = user.is_superuser or user.group.filter(name='Admin').exists()
+    _is_admin = is_admin(user)
 
     if _is_pilot_or_admin:
         sites = Site.objects.all().order_by('name')
