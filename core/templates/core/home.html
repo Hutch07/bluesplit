@@ -23,6 +23,19 @@
         p {
             text-align: center;
         }
+        .logout-btn {
+            background: none;
+            border: none;
+            color: #0f6ecb;
+            cursor: pointer;
+            padding: 0;
+            font-family: inherit;
+            font-size: inherit;
+            text-decoration: underline;
+        }
+        .logout-btn:hover {
+            color: #0d5ab2;
+        }
     </style>
 </head>
 <body>
@@ -31,17 +44,19 @@
             <p>Signed in as {{ request.user.username }}.
                 <form method="post" action="{% url 'logout' %}" style="display:inline">
                     {% csrf_token %}
-                    <button type="submit" style="background:none;border:none;color:#0f6ecb;cursor:pointer;padding:0;font-family:inherit;font-size:inherit;">Logout</button>
+                    <button type="submit" class="logout-btn">Logout</button>
                 </form>
             </p>
         {% else %}
-        <h1>SSI Split map.</h1>
+            <h1>SSI Split map.</h1>
             <p><a href="{% url 'login' %}">Login</a> | <a href="{% url 'password_reset' %}">Reset Password</a></p>
         {% endif %}
     </header>
 
-    
     <p>SSI home www.ssi-mi.com</p>
     <p><a href="{% url 'dashboard' %}">Go to dashboard (login required)</a></p>
+    {% if is_pilot_or_admin %}
+        <p><a href="{% url 'add_flight' %}">Log a Flight</a></p>
+    {% endif %}
 </body>
 </html>

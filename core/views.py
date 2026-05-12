@@ -12,7 +12,10 @@ def is_pilot_or_admin(user):
 
 
 def home(request):
-    return render(request, 'core/home.html')
+    context = {}
+    if request.user.is_authenticated:
+        context['is_pilot_or_admin'] = is_pilot_or_admin(request.user)
+    return render(request, 'core/home.html', context)
 
 
 @login_required
