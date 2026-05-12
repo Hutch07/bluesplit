@@ -5,23 +5,39 @@ from django.utils.translation import gettext_lazy as _
 from .models import User, Site, Flight, Geojson, Group
 
 
+def is_admin_user(user):
+    """
+    Returns True if the user should have admin panel access.
+    Checks:
+      1. is_superuser — always allowed
+      2. core.Group (custom) named 'Admin'
+      3. Django's built-in auth.Group named 'Admin'
+    Note: user must also have is_staff=True to enter the admin at all.
+    """
+    if user.is_superuser:
+        return True
+    if user.group.filter(name='Admin').exists():
+        return True
+    if user.groups.filter(name='Admin').exists():
+        return True
+    return False
+
+
 class AdminOnlyMixin:
     def has_module_permission(self, request):
-        if request.user.is_superuser:
-            return True
-        return request.user.group.filter(name='Admin').exists()
+        return is_admin_user(request.user)
 
     def has_view_permission(self, request, obj=None):
-        return self.has_module_permission(request)
+        return is_admin_user(request.user)
 
     def has_add_permission(self, request):
-        return self.has_module_permission(request)
+        return is_admin_user(request.user)
 
     def has_change_permission(self, request, obj=None):
-        return self.has_module_permission(request)
+        return is_admin_user(request.user)
 
     def has_delete_permission(self, request, obj=None):
-        return self.has_module_permission(request)
+        return is_admin_user(request.user)
 
 
 @admin.register(User)
