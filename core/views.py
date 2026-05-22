@@ -133,14 +133,8 @@ def splitmap(request, site_id):
     # Get all flights for this site sorted chronologically
     flights = Flight.objects.filter(site=site).order_by('date')
 
-    if flights.count() < 2:
-        messages.error(request, 'This site needs at least 2 flights to use the split map.')
-        return redirect(f'/dashboard/?site={site_id}')
-
-    flights_list = list(flights)
-    flight_right = flights_list[-1]   # most recent
-    flight_left  = flights_list[-2]   # second most recent
-
+    # If site default style is single, show a single-map view using the most
+    # recent flight. Otherwise continue to the split map flow below.
     def date_to_key(d):
         # Converts date to folder key format: 2026_0422
         return d.strftime('%Y_%m%d')
@@ -149,6 +143,29 @@ def splitmap(request, site_id):
         # aws_url already contains the full base path, append tile suffix
         base = aws_url.rstrip('/')
         return base + '/{z}/{x}/{y}.png'
+
+    if site.default_style == 'single':
+        if not flights.exists():
+            messages.error(request, 'No flights available for this site.')
+            return redirect(f'/dashboard/?site={site_id}')
+
+        latest = list(flights)[-1]
+        context = {
+            'site': site,
+            'flight': latest,
+            'flight_key': date_to_key(latest.date),
+            'flight_url': tile_url(latest.aws_url),
+            'flights': list(flights),
+        }
+        return render(request, 'core/single_map.html', context)
+
+    if flights.count() < 2:
+        messages.error(request, 'This site needs at least 2 flights to use the split map.')
+        return redirect(f'/dashboard/?site={site_id}')
+
+    flights_list = list(flights)
+    flight_right = flights_list[-1]   # most recent
+    flight_left  = flights_list[-2]   # second most recent
 
     # Build flight dict for datepicker: { "2026_0422": "https://.../" }
     flight_dict = {}
