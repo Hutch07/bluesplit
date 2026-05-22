@@ -47,7 +47,7 @@ class Site(models.Model):
     default_style = models.CharField('Default Style', max_length=16, unique=False, default='split')
 
     def __str__(self):
-        return str(self.name + ', ' + str(self.default_style))
+        return self.name + ', ' + str(self.default_style)
 
     class Meta:
         verbose_name = 'site'
