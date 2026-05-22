@@ -18,7 +18,7 @@ class Group(models.Model):
     name = models.CharField('Name', max_length=20, choices=GROUP_CHOICES, unique=True)
 
     def __str__(self):
-        return self.name
+        return str(self.name)
 
     class Meta:
         verbose_name = 'group'

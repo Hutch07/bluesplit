@@ -1,0 +1,65 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>{{ site.name }} | Map | BlueSplit</title>
+    <link rel="icon" type="image/png" href="/static/core/images/favicon.png">
+
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+    <!-- jQuery -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+
+    <style>
+        html, body { height: 100%; margin: 0; font-family: Inter, system-ui, -apple-system, sans-serif; }
+        #topbar { height: 42px; background: rgba(15,22,36,0.92); color: white; display:flex; align-items:center; gap:12px; padding:0 14px; }
+        #map { position: absolute; top:42px; right:0; left:0; bottom:0; }
+        .map-label { position: absolute; top: 52px; left: 16px; z-index: 900; padding: 6px 12px; border-radius: 14px; background: rgba(15,110,203,0.9); color: white; font-weight:700; }
+        .top-actions { margin-left: 8px; color: rgba(255,255,255,0.8); text-decoration:none; }
+    </style>
+
+    <script>
+        const SITE_LAT = {{ site.latitude }};
+        const SITE_LNG = {{ site.longitude }};
+        const SITE_NAME = "{{ site.name|escapejs }}";
+        const FLIGHT_DATE = "{{ flight.date }}";
+        const FLIGHT_URL = "{{ flight_url }}"; // tile pattern with {z}/{x}/{y}
+    </script>
+</head>
+<body>
+    <div id="topbar">
+        <a href="{% url 'dashboard' %}?site={{ site.pk }}" class="top-actions">← Dashboard</a>
+        <div style="font-weight:700">{{ site.name }}</div>
+        <div style="margin-left:auto; color:rgba(255,255,255,0.7);">Last flight: {{ flight.date }}</div>
+        <form method="post" action="{% url 'logout' %}" style="display:inline;margin-left:8px">
+            {% csrf_token %}
+            <button type="submit" style="background:none;border:none;color:rgba(255,255,255,0.65);cursor:pointer;padding:0;font-family:inherit;">Logout</button>
+        </form>
+    </div>
+
+    <div id="map"></div>
+    <div class="map-label">{{ flight.date }}</div>
+
+    <script>
+    window.addEventListener('load', function() {
+        const center = [SITE_LAT, SITE_LNG];
+        const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 20, attribution: '© OpenStreetMap' });
+        const map = L.map('map', { layers: [osm], center: center, zoom: 15, preferCanvas: true, maxZoom: 22 });
+
+        // Add orthomosaic layer if available
+        if (FLIGHT_URL && FLIGHT_URL !== '') {
+            try {
+                const drone = L.tileLayer(FLIGHT_URL, { tms: true, opacity: 1.0, minZoom: 13, maxNativeZoom: 21, maxZoom: 22 });
+                drone.addTo(map);
+                L.control.layers({ 'OpenStreetMap': osm }, { 'Orthomosaic': drone }).addTo(map);
+            } catch (e) {
+                console.error('Failed to add drone layer', e);
+            }
+        }
+    });
+    </script>
+</body>
+</html>
