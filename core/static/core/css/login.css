@@ -13,7 +13,7 @@ body {
     min-height: 100vh;
     font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     color: var(--text-color);
-    background: url("/static/core/images/BWB_Drone.png") no-repeat center center fixed;
+    background: url("/static/core/images/BWB_Min.png") no-repeat center center fixed;
     background-size: cover;
 }
 
