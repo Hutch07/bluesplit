@@ -44,12 +44,10 @@ class Site(models.Model):
         blank=True,
         verbose_name='Allowed Users',
     )
-    default_style = models.CharField('DefaultStyle', max_length=16, unique=False, default='split')
-    customer= models.CharField('Customer', max_length=127, unique=False, default='SSI')
-    
+    customer = models.CharField('Customer', max_length=127, unique=False, default='SSI')
 
     def __str__(self):
-        return self.name + ', ' + str(self.default_style)
+        return self.name
 
     class Meta:
         verbose_name = 'site'

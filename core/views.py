@@ -144,21 +144,6 @@ def splitmap(request, site_id):
         base = aws_url.rstrip('/')
         return base + '/{z}/{x}/{y}.png'
 
-    if site.default_style == 'single':
-        if not flights.exists():
-            messages.error(request, 'No flights available for this site.')
-            return redirect(f'/dashboard/?site={site_id}')
-
-        latest = list(flights)[-1]
-        context = {
-            'site': site,
-            'flight': latest,
-            'flight_key': date_to_key(latest.date),
-            'flight_url': tile_url(latest.aws_url),
-            'flights': list(flights),
-        }
-        return render(request, 'core/single_map.html', context)
-
     if flights.count() < 2:
         messages.error(request, 'This site needs at least 2 flights to use the split map.')
         return redirect(f'/dashboard/?site={site_id}')
