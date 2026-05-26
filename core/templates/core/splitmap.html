@@ -168,6 +168,22 @@
         .btn-load:hover { background: #0d5ab2; transform: translateY(-1px); }
         .btn-load:active { transform: translateY(0); }
 
+        .btn-toggle {
+            width: 100%;
+            padding: 10px;
+            background: rgba(16, 185, 129, 0.8);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 12px;
+            transition: background 0.2s, transform 0.15s;
+        }
+        .btn-toggle:hover { background: rgba(16, 185, 129, 1); transform: translateY(-1px); }
+        .btn-toggle:active { transform: translateY(0); }
+
         /* Flight list */
         .flight-list {
             list-style: none;
@@ -322,6 +338,9 @@
                 </div>
                 <button class="btn-load" onclick="updateTiles()">
                     <i class="fa fa-plane"></i> Load Imagery
+                </button>
+                <button class="btn-toggle" onclick="toggleMapMode()">
+                    <i class="fa fa-arrows-alt-h"></i> View Single Map
                 </button>
             </div>
 
@@ -510,6 +529,27 @@
             if (map2) map2.invalidateSize();
         }, 280);
     });
+
+    // ── Toggle between split and single map modes ────────────────────────────
+    function toggleMapMode() {
+        const btn = event.target.closest('.btn-toggle');
+        const mapsArea = document.getElementById('maps-area');
+        const map2Elem = document.getElementById('map2');
+        const toggleBtn = document.querySelector('.btn-toggle');
+        
+        if (map2Elem.style.display === 'none') {
+            // Currently showing single map — switch back to split
+            map2Elem.style.display = '';
+            mapsArea.style.flexDirection = 'row';
+            if (map2) map2.invalidateSize();
+            toggleBtn.innerHTML = '<i class="fa fa-arrows-alt-h"></i> View Single Map';
+        } else {
+            // Currently showing split map — switch to single
+            map2Elem.style.display = 'none';
+            if (map1) map1.invalidateSize();
+            toggleBtn.innerHTML = '<i class="fa fa-arrows-alt-h"></i> View Split Map';
+        }
+    }
     </script>
 </body>
 </html>
