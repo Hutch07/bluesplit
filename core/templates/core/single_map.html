@@ -95,7 +95,7 @@
         const SITE_NAME = "{{ site.name|escapejs }}";
         const FLIGHT_DATE = "{{ flight.date }}";
         const FLIGHT_URL = "{{ flight_url }}"; // tile pattern with {z}/{x}/{y}.png
-        const OBSCURES = {{ obscures_json|safe }}; // Tile data with /tiles/{z}/{x}/{y}.png format
+        const OBSCURES = {{ obscures_json|safe }}; // Obscure tile layers
     </script>
 </head>
 <body>
@@ -118,7 +118,7 @@
     // ══════════════════════════════════════════════════════════════════════════════
     // Global variable to hold the tile layers (so they stay on top)
     // ══════════════════════════════════════════════════════════════════════════════
-    let tileLayer = null;
+    let obscureLayers = [];
 
     // ══════════════════════════════════════════════════════════════════════════════
     // Initialize the map when page loads
@@ -163,21 +163,25 @@
         }
 
         // ── Add Obscure tile layers on top (always visible) ──
-        // These use standard XYZ tile format: /tiles/{z}/{x}/{y}.png
+        // These use standard XYZ tile format with {z}/{x}/{y}.png
         if (OBSCURES && OBSCURES.length > 0) {
-            console.log('Loading', OBSCURES.length, 'tile layer(s)');
+            console.log('Loading', OBSCURES.length, 'Obscure tile layer(s)');
             
             OBSCURES.forEach((obscure, idx) => {
                 try {
                     const layerName = obscure.name || 'Tile Layer ' + (idx + 1);
-                    console.log('Processing tile layer:', layerName, 'from:', obscure.aws_url);
                     
-                    // Create tile layer from the AWS URL with /tiles/{z}/{x}/{y}.png format
-                    tileLayer = L.tileLayer(obscure.aws_url + '{z}/{x}/{y}.png', {
-                        tms: false,                     // Standard XYZ (not TMS)
+                    // Build complete tile URL by adding {z}/{x}/{y}.png
+                    const tileUrl = obscure.aws_url + '{z}/{x}/{y}.png';
+                    console.log('Processing Obscure layer:', layerName);
+                    console.log('Tile URL:', tileUrl);
+                    
+                    // Create tile layer
+                    const layer = L.tileLayer(tileUrl, {
+                        tms: false,                     // XYZ format (not TMS - gdal2tiles creates XYZ)
                         opacity: 1.0,                   // Fully opaque - blocks everything below
                         minZoom: 13,
-                        maxNativeZoom: 21,
+                        maxNativeZoom: 21,              // Tiles exist up to zoom 21
                         maxZoom: 22,
                         crossOrigin: 'anonymous',
                         attribution: layerName,
@@ -185,30 +189,33 @@
                     });
                     
                     // Add to map
-                    tileLayer.addTo(map);
+                    layer.addTo(map);
+                    
+                    // Keep reference for later
+                    obscureLayers.push(layer);
                     
                     // Bring this layer to the front
-                    tileLayer.bringToFront();
+                    layer.bringToFront();
                     
-                    console.log('✓ Tile layer ' + (idx + 1) + ' added:', layerName);
+                    console.log('✓ Obscure layer ' + (idx + 1) + ' added:', layerName);
                     
                 } catch (error) {
-                    console.error('🔴 Error loading tile layer:', error);
+                    console.error('🔴 Error loading Obscure layer:', error);
                 }
             });
             
-            // Make sure tile layers stay on top after any other layer changes
+            // Make sure tile layers stay on top when basemap is toggled
             map.on('baselayerchange', function() {
-                if (tileLayer) {
-                    tileLayer.bringToFront();
-                    console.log('Tile layer brought to front');
-                }
+                obscureLayers.forEach(layer => {
+                    layer.bringToFront();
+                });
+                console.log('Obscure layers brought to front');
             });
             
-            console.log('🟢 All tile layers successfully added to map!');
+            console.log('🟢 All Obscure layers successfully added to map!');
             
         } else {
-            console.log('No tile layers to load');
+            console.log('No Obscure tile layers to load');
         }
     });
     </script>
