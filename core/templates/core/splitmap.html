@@ -289,6 +289,7 @@
         const SITE_NAME     = "{{ site.name|escapejs }}";
         const FLIGHT_DICT   = {{ flight_dict_json|safe }};   // { "2026_0422": "https://.../" }
         const FLIGHT_DATES  = {{ flight_dates_json|safe }};  // ["2026-04-22", ...]
+        const OBSCURES      = {{ obscures_json|safe }};      // [{ id, name, aws_url }, ...]
         let dateKeyLeft     = "{{ flight_left_key }}";       // e.g. "2026_0401"
         let dateKeyRight    = "{{ flight_right_key }}";
     </script>
@@ -478,6 +479,25 @@
 
         leftLayer  = L.tileLayer(urlL, TILE_OPTS).addTo(map1);
         rightLayer = L.tileLayer(urlR, TILE_OPTS).addTo(map2);
+
+        // Add Obscure layers (Cloud Optimized GeoTIFFs) — always visible, not in layer control
+        if (OBSCURES && OBSCURES.length > 0) {
+            console.log('Loading', OBSCURES.length, 'Obscure layers');
+            OBSCURES.forEach((obscure, idx) => {
+                const obscureTileLayer = L.tileLayer(obscure.aws_url, {
+                    tms: true,
+                    opacity: 0.9,
+                    minZoom: 13,
+                    maxNativeZoom: 21,
+                    maxZoom: 22,
+                    crossOrigin: 'anonymous',
+                    attribution: `© ${obscure.name || 'Obscure Layer ' + (idx + 1)}`
+                });
+                obscureTileLayer.addTo(map1);
+                obscureTileLayer.addTo(map2);
+                console.log('Added Obscure layer:', obscure.name);
+            });
+        }
 
         L.control.layers({ "OpenStreetMap": osmL }, { "Orthomosaic": leftLayer  }).addTo(map1);
         L.control.layers({ "OpenStreetMap": osmR }, { "Orthomosaic": rightLayer }).addTo(map2);

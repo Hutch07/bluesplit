@@ -44,10 +44,10 @@ class Site(models.Model):
         blank=True,
         verbose_name='Allowed Users',
     )
-    customer = models.CharField('Customer', max_length=127, unique=False, default='SSI')
+    default_style = models.CharField('Default Style', max_length=16, unique=False, default='split')
 
     def __str__(self):
-        return self.name
+        return self.name + ', ' + str(self.default_style)
 
     class Meta:
         verbose_name = 'site'
@@ -80,3 +80,22 @@ class Geojson(models.Model):
     class Meta:
         verbose_name = 'geojson'
         verbose_name_plural = 'geojsons'
+
+
+class Obscure(models.Model):
+    """
+    Cloud Optimized GeoTIFF (COG) layer for terrain masking or obscuring.
+    Admins only. These layers are always displayed and cannot be toggled off.
+    """
+    site = models.ForeignKey(Site, on_delete=models.CASCADE, related_name='obscures')
+    aws_url = models.CharField('AWS COG URL', max_length=500, unique=True)
+    name = models.CharField('Name', max_length=255, blank=True, help_text='Optional display name for the COG layer')
+    created_at = models.DateTimeField('Created', auto_now_add=True)
+    updated_at = models.DateTimeField('Updated', auto_now=True)
+
+    def __str__(self):
+        return f"{self.site.name} - {self.name or 'Obscure Layer'}"
+
+    class Meta:
+        verbose_name = 'obscure'
+        verbose_name_plural = 'obscures'

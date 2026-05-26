@@ -27,6 +27,7 @@
         const SITE_NAME = "{{ site.name|escapejs }}";
         const FLIGHT_DATE = "{{ flight.date }}";
         const FLIGHT_URL = "{{ flight_url }}"; // tile pattern with {z}/{x}/{y}
+        const OBSCURES = {{ obscures_json|safe }}; // Cloud Optimized GeoTIFF layers
     </script>
 </head>
 <body>
@@ -58,6 +59,28 @@
             } catch (e) {
                 console.error('Failed to add drone layer', e);
             }
+        }
+
+        // Add Obscure layers (Cloud Optimized GeoTIFFs) — always visible, not toggleable
+        if (OBSCURES && OBSCURES.length > 0) {
+            console.log('Loading', OBSCURES.length, 'Obscure layers');
+            OBSCURES.forEach((obscure, idx) => {
+                try {
+                    const obscureLayer = L.tileLayer(obscure.aws_url, {
+                        tms: true,
+                        opacity: 0.9,
+                        minZoom: 13,
+                        maxNativeZoom: 21,
+                        maxZoom: 22,
+                        crossOrigin: 'anonymous',
+                        attribution: `© ${obscure.name || 'Obscure Layer ' + (idx + 1)}`
+                    });
+                    obscureLayer.addTo(map);
+                    console.log('Added Obscure layer:', obscure.name);
+                } catch (e) {
+                    console.error('Failed to add obscure layer:', obscure.name, e);
+                }
+            });
         }
     });
     </script>
