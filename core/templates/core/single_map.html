@@ -178,7 +178,7 @@
                     
                     // Create tile layer
                     const layer = L.tileLayer(tileUrl, {
-                        tms: false,                     // XYZ format (not TMS - gdal2tiles creates XYZ)
+                        tms: true,                     // XYZ format (not TMS - gdal2tiles creates XYZ)
                         opacity: 1.0,                   // Fully opaque - blocks everything below
                         minZoom: 13,
                         maxNativeZoom: 21,              // Tiles exist up to zoom 21

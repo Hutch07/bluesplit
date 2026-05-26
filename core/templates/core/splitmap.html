@@ -492,7 +492,7 @@
                     console.log('Tile URL:', tileUrl);
                     
                     const layer = L.tileLayer(tileUrl, {  // ✅ Now includes {z}/{x}/{y}.png
-                        tms: false,                  // ← Try false first (gdal2tiles creates XYZ)
+                        tms: true,                  // ← Try false first (gdal2tiles creates XYZ)
                         opacity: 1.0,                // ← Fully opaque (on top)
                         minZoom: 10,
                         maxNativeZoom: 21,           // ← Tiles exist up to zoom 21
