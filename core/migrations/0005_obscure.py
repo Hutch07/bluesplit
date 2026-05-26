@@ -1,6 +1,3 @@
-# Generated migration for adding Obscure model
-# Place this file in: your_app/migrations/0004_obscure.py
-
 from django.db import migrations, models
 import django.db.models.deletion
 
@@ -8,7 +5,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0004_remove_site_default_style'),  # Adjust dependency to your last migration
+        ('core', '0003_geojson_level_site_allowed_users_site_default_style'),  # ← FIXED: Changed from 0004 to 0003
     ]
 
     operations = [
