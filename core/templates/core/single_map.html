@@ -86,6 +86,17 @@
         .logout-btn:hover {
             color: white;
         }
+
+        /* ══════════════════════════════════════════════════════════════════════════════ */
+        /* Obscure Layer Styling - Makes black pixels appear transparent */
+        /* ══════════════════════════════════════════════════════════════════════════════ */
+        .obscure-layer {
+            /* CSS filter to make black pixels lighter/transparent */
+            filter: brightness(1.02) contrast(1.01);
+            /* Ensure it stays on top */
+            position: relative;
+            z-index: 999;
+        }
     </style>
 
     <script>
@@ -116,7 +127,7 @@
 
     <script>
     // ══════════════════════════════════════════════════════════════════════════════
-    // Global variable to hold the tile layers (so they stay on top)
+    // Global variable to hold obscure layers so they stay on top
     // ══════════════════════════════════════════════════════════════════════════════
     let obscureLayers = [];
 
@@ -143,7 +154,7 @@
 
         console.log('🔵 Map initialized at', center);
 
-        // Add flight orthomosaic layer if available
+        // ── Add flight orthomosaic layer (toggleable) ──
         if (FLIGHT_URL && FLIGHT_URL !== '') {
             try {
                 console.log('Loading flight orthomosaic from:', FLIGHT_URL);
@@ -157,12 +168,16 @@
                 });
                 drone.addTo(map);
                 console.log('✓ Flight orthomosaic layer added');
+                
+                // Add layer control for basemap + flight ONLY
+                // Obscure layers are added separately (NOT in layer control)
+                L.control.layers({ 'OpenStreetMap': osm }, { 'Orthomosaic': drone }).addTo(map);
             } catch (e) {
                 console.error('Failed to add drone layer', e);
             }
         }
 
-        // ── Add Obscure tile layers on top (always visible) ──
+        // ── Add Obscure tile layers on top (always visible, not toggleable) ──
         // These use standard XYZ tile format with {z}/{x}/{y}.png
         if (OBSCURES && OBSCURES.length > 0) {
             console.log('Loading', OBSCURES.length, 'Obscure tile layer(s)');
@@ -176,25 +191,26 @@
                     console.log('Processing Obscure layer:', layerName);
                     console.log('Tile URL:', tileUrl);
                     
-                    // Create tile layer
+                    // Create tile layer with TMS format
                     const layer = L.tileLayer(tileUrl, {
-                        tms: true,                     // XYZ format (not TMS - gdal2tiles creates XYZ)
+                        tms: true,                      // TMS format (GDAL default)
                         opacity: 1.0,                   // Fully opaque - blocks everything below
                         minZoom: 13,
                         maxNativeZoom: 21,              // Tiles exist up to zoom 21
                         maxZoom: 22,
                         crossOrigin: 'anonymous',
                         attribution: layerName,
-                        zIndex: 999                     // High z-index to stay on top
+                        zIndex: 999,                    // High z-index to stay on top
+                        className: 'obscure-layer'      // CSS class for styling (black transparency)
                     });
                     
                     // Add to map
                     layer.addTo(map);
                     
-                    // Keep reference for later
+                    // Keep reference in array so we can bring to front later
                     obscureLayers.push(layer);
                     
-                    // Bring this layer to the front
+                    // Bring this layer to the front immediately
                     layer.bringToFront();
                     
                     console.log('✓ Obscure layer ' + (idx + 1) + ' added:', layerName);
@@ -204,18 +220,35 @@
                 }
             });
             
-            // Make sure tile layers stay on top when basemap is toggled
-            map.on('baselayerchange', function() {
+            // ── KEY: Keep obscure layers on top when other layers toggle ──
+            // When user adds a layer via the layer control
+            map.on('overlayadd', function() {
                 obscureLayers.forEach(layer => {
                     layer.bringToFront();
                 });
-                console.log('Obscure layers brought to front');
+                console.log('✓ Obscure layers brought to front (layer added)');
+            });
+            
+            // When user removes a layer via the layer control
+            map.on('overlayremove', function() {
+                obscureLayers.forEach(layer => {
+                    layer.bringToFront();
+                });
+                console.log('✓ Obscure layers brought to front (layer removed)');
+            });
+            
+            // Also keep on top when map zooms
+            map.on('zoomend', function() {
+                obscureLayers.forEach(layer => {
+                    layer.bringToFront();
+                });
+                console.log('✓ Obscure layers brought to front (zoom changed)');
             });
             
             console.log('🟢 All Obscure layers successfully added to map!');
             
         } else {
-            console.log('No Obscure tile layers to load');
+            console.log('ℹ️  No Obscure tile layers to load');
         }
     });
     </script>
