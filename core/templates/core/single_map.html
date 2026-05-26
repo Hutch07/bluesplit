@@ -93,9 +93,6 @@
         .obscure-layer {
             /* CSS filter to make black pixels lighter/transparent */
             filter: brightness(1.02) contrast(1.01);
-            /* Ensure it stays on top */
-            position: relative;
-            z-index: 999;
         }
     </style>
 
@@ -127,11 +124,6 @@
 
     <script>
     // ══════════════════════════════════════════════════════════════════════════════
-    // Global variable to hold obscure layers so they stay on top
-    // ══════════════════════════════════════════════════════════════════════════════
-    let obscureLayers = [];
-
-    // ══════════════════════════════════════════════════════════════════════════════
     // Initialize the map when page loads
     // ══════════════════════════════════════════════════════════════════════════════
     window.addEventListener('load', function() {
@@ -154,6 +146,15 @@
 
         console.log('🔵 Map initialized at', center);
 
+        // ── Create custom pane for obscure layers ──
+        // This pane will ALWAYS be on top regardless of layer toggling
+        // Default pane z-indices: tilePane=200, overlayPane=400
+        // We set obscurePane to 650 so it's always above everything
+        map.createPane('obscurePane');
+        map.getPane('obscurePane').style.zIndex = 650;
+        
+        console.log('✓ Custom pane "obscurePane" created with zIndex=650');
+
         // ── Add flight orthomosaic layer (toggleable) ──
         if (FLIGHT_URL && FLIGHT_URL !== '') {
             try {
@@ -170,14 +171,14 @@
                 console.log('✓ Flight orthomosaic layer added');
                 
                 // Add layer control for basemap + flight ONLY
-                // Obscure layers are added separately (NOT in layer control)
+                // Obscure layers are in their own pane (NOT in layer control)
                 L.control.layers({ 'OpenStreetMap': osm }, { 'Orthomosaic': drone }).addTo(map);
             } catch (e) {
                 console.error('Failed to add drone layer', e);
             }
         }
 
-        // ── Add Obscure tile layers on top (always visible, not toggleable) ──
+        // ── Add Obscure tile layers to custom pane (always visible, not toggleable) ──
         // These use standard XYZ tile format with {z}/{x}/{y}.png
         if (OBSCURES && OBSCURES.length > 0) {
             console.log('Loading', OBSCURES.length, 'Obscure tile layer(s)');
@@ -200,52 +201,22 @@
                         maxZoom: 22,
                         crossOrigin: 'anonymous',
                         attribution: layerName,
-                        zIndex: 999,                    // High z-index to stay on top
-                        className: 'obscure-layer'      // CSS class for styling (black transparency)
+                        className: 'obscure-layer',     // CSS class for styling (black transparency)
+                        pane: 'obscurePane'             // ← KEY: Assign to custom pane!
                     });
                     
                     // Add to map
                     layer.addTo(map);
                     
-                    // Keep reference in array so we can bring to front later
-                    obscureLayers.push(layer);
-                    
-                    // Bring this layer to the front immediately
-                    layer.bringToFront();
-                    
-                    console.log('✓ Obscure layer ' + (idx + 1) + ' added:', layerName);
+                    console.log('✓ Obscure layer ' + (idx + 1) + ' added to obscurePane:', layerName);
                     
                 } catch (error) {
                     console.error('🔴 Error loading Obscure layer:', error);
                 }
             });
             
-            // ── KEY: Keep obscure layers on top when other layers toggle ──
-            // When user adds a layer via the layer control
-            map.on('overlayadd', function() {
-                obscureLayers.forEach(layer => {
-                    layer.bringToFront();
-                });
-                console.log('✓ Obscure layers brought to front (layer added)');
-            });
-            
-            // When user removes a layer via the layer control
-            map.on('overlayremove', function() {
-                obscureLayers.forEach(layer => {
-                    layer.bringToFront();
-                });
-                console.log('✓ Obscure layers brought to front (layer removed)');
-            });
-            
-            // Also keep on top when map zooms
-            map.on('zoomend', function() {
-                obscureLayers.forEach(layer => {
-                    layer.bringToFront();
-                });
-                console.log('✓ Obscure layers brought to front (zoom changed)');
-            });
-            
-            console.log('🟢 All Obscure layers successfully added to map!');
+            console.log('🟢 All Obscure layers successfully added to obscurePane!');
+            console.log('ℹ️  Obscure layers will ALWAYS stay on top due to custom pane zIndex=650');
             
         } else {
             console.log('ℹ️  No Obscure tile layers to load');
