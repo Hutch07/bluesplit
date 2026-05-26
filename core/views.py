@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 
 from .forms import FlightForm, SiteAccessForm
-from .models import Site, Flight
+from .models import Site, Flight, Obscure  # ← ADDED Obscure import
 
 
 def is_pilot_or_admin(user):
@@ -160,6 +160,10 @@ def splitmap(request, site_id):
         flight_dict[key] = f.aws_url.rstrip('/') + '/'
         flight_dates.append(f.date.strftime('%Y-%m-%d'))
 
+    # ── GET OBSCURE LAYERS FOR THIS SITE ── (NEW!)
+    obscures = Obscure.objects.filter(site=site).values('id', 'name', 'aws_url')
+    obscures_json = json.dumps(list(obscures))
+
     context = {
         'site': site,
         'flight_left': flight_left,
@@ -171,5 +175,6 @@ def splitmap(request, site_id):
         'flight_dict_json': json.dumps(flight_dict),
         'flight_dates_json': json.dumps(flight_dates),
         'flights': flights_list,
+        'obscures_json': obscures_json,  # ← ADDED this line
     }
     return render(request, 'core/splitmap.html', context)
