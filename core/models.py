@@ -45,7 +45,7 @@ class Site(models.Model):
         verbose_name='Allowed Users',
     )
     default_style = models.CharField('DefaultStyle', max_length=16, unique=False, default='split')
-    customer= models.CharField('Customer', max_length=127, unique=True)
+    customer= models.CharField('Customer', max_length=127, unique=False, default='SSI')
     
 
     def __str__(self):
