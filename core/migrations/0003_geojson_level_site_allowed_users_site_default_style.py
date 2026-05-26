@@ -3,7 +3,7 @@
 from django.conf import settings
 from django.db import migrations, models
 
-
+#This migration is driving me crazy
 def _ensure_site_fields(apps, schema_editor):
     connection = schema_editor.connection
     introspection = connection.introspection
