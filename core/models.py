@@ -44,7 +44,9 @@ class Site(models.Model):
         blank=True,
         verbose_name='Allowed Users',
     )
-    default_style = models.CharField('Default Style', max_length=16, unique=False, default='split')
+    default_style = models.CharField('DefaultStyle', max_length=16, unique=False, default='split')
+    customer= models.CharField('Customer', max_length=127, unique=True)
+    
 
     def __str__(self):
         return self.name + ', ' + str(self.default_style)
