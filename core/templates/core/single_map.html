@@ -10,9 +10,6 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 
-    <!-- GeoTIFF Library for COG Support -->
-    <script src="https://cdn.jsdelivr.net/npm/geotiff@2.0.0/dist/geotiff.js"></script>
-
     <!-- jQuery -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 
@@ -97,8 +94,8 @@
         const SITE_LNG = {{ site.longitude }};
         const SITE_NAME = "{{ site.name|escapejs }}";
         const FLIGHT_DATE = "{{ flight.date }}";
-        const FLIGHT_URL = "{{ flight_url }}"; // tile pattern with {z}/{x}/{y}
-        const OBSCURES = {{ obscures_json|safe }}; // COG data
+        const FLIGHT_URL = "{{ flight_url }}"; // tile pattern with {z}/{x}/{y}.png
+        const OBSCURES = {{ obscures_json|safe }}; // Tile data with /tiles/{z}/{x}/{y}.png format
     </script>
 </head>
 <body>
@@ -119,140 +116,23 @@
 
     <script>
     // ══════════════════════════════════════════════════════════════════════════════
-    // Load and display COG (Cloud Optimized GeoTIFF) using GeoTIFF library
+    // Global variable to hold the tile layers (so they stay on top)
     // ══════════════════════════════════════════════════════════════════════════════
-    async function loadCOGLayer(cogUrl, map) {
-        try {
-            console.log('🔵 Starting to load COG from:', cogUrl);
-            
-            // ── Step 1: Fetch the COG file from AWS S3 ──
-            console.log('   Fetching file from S3...');
-            const response = await fetch(cogUrl);
-            
-            if (!response.ok) {
-                throw new Error(`Failed to fetch COG: ${response.status} ${response.statusText}`);
-            }
-            
-            const arrayBuffer = await response.arrayBuffer();
-            console.log('   ✓ File fetched successfully, size:', (arrayBuffer.byteLength / 1024 / 1024).toFixed(2), 'MB');
-            
-            // ── Step 2: Parse the file as GeoTIFF format ──
-            console.log('   Parsing GeoTIFF format...');
-            const GeoTIFFImage = await GeoTIFF.fromArrayBuffer(arrayBuffer);
-            const image = await GeoTIFFImage.getImage();
-            
-            // ── Step 3: Extract image metadata ──
-            const width = image.getWidth();
-            const height = image.getHeight();
-            const geoBox = image.getBoundingBox();
-            
-            console.log('   ✓ GeoTIFF parsed successfully');
-            console.log('   Image dimensions:', width, 'x', height, 'pixels');
-            console.log('   Geographic bounds:', {
-                north: geoBox[3],
-                south: geoBox[1],
-                west: geoBox[0],
-                east: geoBox[2]
-            });
-            
-            // ── Step 4: Read the raster data (pixel values) ──
-            console.log('   Reading raster data...');
-            const raster = await image.readRasters();
-            const data = raster[0]; // First band (usually the main data)
-            
-            console.log('   ✓ Raster data loaded, total pixels:', data.length);
-            console.log('   Data range: min=', Math.min(...data), ', max=', Math.max(...data));
-            
-            // ── Step 5: Create an HTML5 canvas to render the image ──
-            console.log('   Creating canvas...');
-            const canvas = document.createElement('canvas');
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            
-            console.log('   Canvas created:', canvas.width, 'x', canvas.height);
-            
-            // ── Step 6: Create image data structure ──
-            const imageData = ctx.createImageData(width, height);
-            const pixelData = imageData.data;
-            
-            // ── Step 7: Convert raster data to RGBA pixels ──
-            console.log('   Converting raster to RGBA pixels...');
-            
-            // Get min and max values for normalization
-            const minVal = Math.min(...data);
-            const maxVal = Math.max(...data);
-            const range = maxVal - minVal || 1; // Avoid division by zero
-            
-            // Loop through each pixel in the raster
-            for (let i = 0; i < data.length; i++) {
-                // Normalize value from [minVal, maxVal] to [0, 255]
-                const normalized = ((data[i] - minVal) / range) * 255;
-                const value = Math.floor(normalized);
-                
-                // Set RGBA values for this pixel
-                pixelData[i * 4]     = value;      // Red channel
-                pixelData[i * 4 + 1] = value;      // Green channel
-                pixelData[i * 4 + 2] = value;      // Blue channel
-                pixelData[i * 4 + 3] = 255;        // Alpha channel (fully opaque)
-            }
-            
-            console.log('   ✓ Pixels converted to RGBA');
-            
-            // ── Step 8: Draw the pixels onto the canvas ──
-            console.log('   Drawing to canvas...');
-            ctx.putImageData(imageData, 0, 0);
-            console.log('   ✓ Image drawn to canvas');
-            
-            // ── Step 9: Convert canvas to data URL (image) ──
-            console.log('   Converting canvas to image...');
-            const canvasDataUrl = canvas.toDataURL();
-            console.log('   ✓ Canvas converted to data URL');
-            
-            // ── Step 10: Calculate map bounds for the image ──
-            // GeoTIFF bounds are in [west, south, east, north] format
-            // Leaflet expects [[south, west], [north, east]] format
-            const imageBounds = [
-                [geoBox[1], geoBox[0]],  // Southwest corner: [latitude, longitude]
-                [geoBox[3], geoBox[2]]   // Northeast corner: [latitude, longitude]
-            ];
-            
-            console.log('   Map bounds calculated:', imageBounds);
-            
-            // ── Step 11: Create Leaflet image overlay ──
-            console.log('   Creating Leaflet image overlay...');
-            const imageOverlay = L.imageOverlay(canvasDataUrl, imageBounds, {
-                opacity: 1.0,                    // 1.0 = fully opaque (nothing shows underneath)
-                interactive: false,               // Don't respond to mouse clicks
-                crossOrigin: 'anonymous',         // Allow CORS
-                className: 'cog-overlay'         // CSS class for styling if needed
-            });
-            
-            // ── Step 12: Add the image to the map ──
-            console.log('   Adding image overlay to map...');
-            imageOverlay.addTo(map);
-            console.log('🟢 COG layer successfully added to map!');
-            
-            // Return the layer in case you need to reference it later
-            return imageOverlay;
-            
-        } catch (error) {
-            console.error('🔴 Error loading COG:', error);
-            console.error('   Error details:', error.message);
-            console.error('   Stack:', error.stack);
-            return null;
-        }
-    }
+    let tileLayer = null;
 
     // ══════════════════════════════════════════════════════════════════════════════
     // Initialize the map when page loads
     // ══════════════════════════════════════════════════════════════════════════════
     window.addEventListener('load', function() {
         const center = [SITE_LAT, SITE_LNG];
+        
+        // Base map (OpenStreetMap)
         const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
             maxZoom: 20, 
             attribution: '© OpenStreetMap' 
         });
+        
+        // Create map with just the basemap initially
         const map = L.map('map', { 
             layers: [osm], 
             center: center, 
@@ -260,6 +140,8 @@
             preferCanvas: true, 
             maxZoom: 22 
         });
+
+        console.log('🔵 Map initialized at', center);
 
         // Add flight orthomosaic layer if available
         if (FLIGHT_URL && FLIGHT_URL !== '') {
@@ -270,29 +152,63 @@
                     opacity: 1.0, 
                     minZoom: 13, 
                     maxNativeZoom: 21, 
-                    maxZoom: 22 
+                    maxZoom: 22,
+                    attribution: 'Flight Data'
                 });
                 drone.addTo(map);
-                L.control.layers({ 'OpenStreetMap': osm }, { 'Orthomosaic': drone }).addTo(map);
                 console.log('✓ Flight orthomosaic layer added');
             } catch (e) {
                 console.error('Failed to add drone layer', e);
             }
         }
 
-        // Add COG layers on top (always visible, opaque)
+        // ── Add Obscure tile layers on top (always visible) ──
+        // These use standard XYZ tile format: /tiles/{z}/{x}/{y}.png
         if (OBSCURES && OBSCURES.length > 0) {
-            console.log('Loading', OBSCURES.length, 'COG layer(s)');
+            console.log('Loading', OBSCURES.length, 'tile layer(s)');
+            
             OBSCURES.forEach((obscure, idx) => {
-                console.log('Processing COG:', obscure.name || 'Obscure Layer ' + (idx + 1));
-                loadCOGLayer(obscure.aws_url, map).then(layer => {
-                    if (layer) {
-                        console.log('✓ COG layer ' + (idx + 1) + ' added to map');
-                    }
-                });
+                try {
+                    const layerName = obscure.name || 'Tile Layer ' + (idx + 1);
+                    console.log('Processing tile layer:', layerName, 'from:', obscure.aws_url);
+                    
+                    // Create tile layer from the AWS URL with /tiles/{z}/{x}/{y}.png format
+                    tileLayer = L.tileLayer(obscure.aws_url + '{z}/{x}/{y}.png', {
+                        tms: false,                     // Standard XYZ (not TMS)
+                        opacity: 1.0,                   // Fully opaque - blocks everything below
+                        minZoom: 13,
+                        maxNativeZoom: 21,
+                        maxZoom: 22,
+                        crossOrigin: 'anonymous',
+                        attribution: layerName,
+                        zIndex: 999                     // High z-index to stay on top
+                    });
+                    
+                    // Add to map
+                    tileLayer.addTo(map);
+                    
+                    // Bring this layer to the front
+                    tileLayer.bringToFront();
+                    
+                    console.log('✓ Tile layer ' + (idx + 1) + ' added:', layerName);
+                    
+                } catch (error) {
+                    console.error('🔴 Error loading tile layer:', error);
+                }
             });
+            
+            // Make sure tile layers stay on top after any other layer changes
+            map.on('baselayerchange', function() {
+                if (tileLayer) {
+                    tileLayer.bringToFront();
+                    console.log('Tile layer brought to front');
+                }
+            });
+            
+            console.log('🟢 All tile layers successfully added to map!');
+            
         } else {
-            console.log('No COG layers to load');
+            console.log('No tile layers to load');
         }
     });
     </script>
