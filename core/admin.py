@@ -18,7 +18,7 @@ class GroupAdmin(admin.ModelAdmin):
 
 @admin.register(Site)
 class SiteAdmin(admin.ModelAdmin):
-    list_display = ('name', 'latitude', 'longitude', 'default_style')
+    list_display = ('name', 'longitude', 'latitude')  # Removed default_style
     search_fields = ('name',)
     ordering = ('name',)
 
