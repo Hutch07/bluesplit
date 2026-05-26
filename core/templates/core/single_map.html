@@ -10,34 +10,107 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 
+    <!-- GeoTIFF Library for COG Support -->
+    <script src="https://cdn.jsdelivr.net/npm/geotiff@2.0.0/dist/geotiff.js"></script>
+
     <!-- jQuery -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 
     <style>
-        html, body { height: 100%; margin: 0; font-family: Inter, system-ui, -apple-system, sans-serif; }
-        #topbar { height: 42px; background: rgba(15,22,36,0.92); color: white; display:flex; align-items:center; gap:12px; padding:0 14px; }
-        #map { position: absolute; top:42px; right:0; left:0; bottom:0; }
-        .map-label { position: absolute; top: 52px; left: 16px; z-index: 900; padding: 6px 12px; border-radius: 14px; background: rgba(15,110,203,0.9); color: white; font-weight:700; }
-        .top-actions { margin-left: 8px; color: rgba(255,255,255,0.8); text-decoration:none; }
+        html, body { 
+            height: 100%; 
+            margin: 0; 
+            font-family: Inter, system-ui, -apple-system, sans-serif; 
+        }
+        #topbar { 
+            height: 42px; 
+            background: rgba(15,22,36,0.92); 
+            color: white; 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            padding: 0 14px; 
+            z-index: 1000;
+        }
+        #map { 
+            position: absolute; 
+            top: 42px; 
+            right: 0; 
+            left: 0; 
+            bottom: 0; 
+        }
+        .map-label { 
+            position: absolute; 
+            top: 52px; 
+            left: 16px; 
+            z-index: 900; 
+            padding: 6px 12px; 
+            border-radius: 14px; 
+            background: rgba(15,110,203,0.9); 
+            color: white; 
+            font-weight: 700; 
+            font-size: 0.9rem;
+        }
+        .top-actions { 
+            margin-left: 8px; 
+            color: rgba(255,255,255,0.8); 
+            text-decoration: none;
+            font-size: 0.88rem;
+            transition: color 0.2s;
+        }
+        .top-actions:hover {
+            color: white;
+        }
+        .header-sep {
+            color: rgba(255,255,255,0.3);
+            margin: 0 8px;
+        }
+        .topbar-spacer {
+            flex: 1;
+        }
+        .topbar-info {
+            color: rgba(255,255,255,0.7);
+            font-size: 0.88rem;
+        }
+        .logout-form {
+            display: inline;
+            margin-left: 8px;
+        }
+        .logout-btn {
+            background: none;
+            border: none;
+            color: rgba(255,255,255,0.65);
+            cursor: pointer;
+            padding: 0;
+            font-family: inherit;
+            font-size: 0.88rem;
+            transition: color 0.2s;
+        }
+        .logout-btn:hover {
+            color: white;
+        }
     </style>
 
     <script>
+        // Data injected from Django view
         const SITE_LAT = {{ site.latitude }};
         const SITE_LNG = {{ site.longitude }};
         const SITE_NAME = "{{ site.name|escapejs }}";
         const FLIGHT_DATE = "{{ flight.date }}";
         const FLIGHT_URL = "{{ flight_url }}"; // tile pattern with {z}/{x}/{y}
-        const OBSCURES = {{ obscures_json|safe }}; // Cloud Optimized GeoTIFF layers
+        const OBSCURES = {{ obscures_json|safe }}; // COG data
     </script>
 </head>
 <body>
     <div id="topbar">
         <a href="{% url 'dashboard' %}?site={{ site.pk }}" class="top-actions">← Dashboard</a>
-        <div style="font-weight:700">{{ site.name }}</div>
-        <div style="margin-left:auto; color:rgba(255,255,255,0.7);">Last flight: {{ flight.date }}</div>
-        <form method="post" action="{% url 'logout' %}" style="display:inline;margin-left:8px">
+        <span class="header-sep">|</span>
+        <div style="font-weight:700; font-size: 0.95rem;">{{ site.name }}</div>
+        <div class="topbar-spacer"></div>
+        <div class="topbar-info">Last flight: {{ flight.date }}</div>
+        <form method="post" action="{% url 'logout' %}" class="logout-form">
             {% csrf_token %}
-            <button type="submit" style="background:none;border:none;color:rgba(255,255,255,0.65);cursor:pointer;padding:0;font-family:inherit;">Logout</button>
+            <button type="submit" class="logout-btn">Logout</button>
         </form>
     </div>
 
@@ -45,42 +118,181 @@
     <div class="map-label">{{ flight.date }}</div>
 
     <script>
+    // ══════════════════════════════════════════════════════════════════════════════
+    // Load and display COG (Cloud Optimized GeoTIFF) using GeoTIFF library
+    // ══════════════════════════════════════════════════════════════════════════════
+    async function loadCOGLayer(cogUrl, map) {
+        try {
+            console.log('🔵 Starting to load COG from:', cogUrl);
+            
+            // ── Step 1: Fetch the COG file from AWS S3 ──
+            console.log('   Fetching file from S3...');
+            const response = await fetch(cogUrl);
+            
+            if (!response.ok) {
+                throw new Error(`Failed to fetch COG: ${response.status} ${response.statusText}`);
+            }
+            
+            const arrayBuffer = await response.arrayBuffer();
+            console.log('   ✓ File fetched successfully, size:', (arrayBuffer.byteLength / 1024 / 1024).toFixed(2), 'MB');
+            
+            // ── Step 2: Parse the file as GeoTIFF format ──
+            console.log('   Parsing GeoTIFF format...');
+            const GeoTIFFImage = await GeoTIFF.fromArrayBuffer(arrayBuffer);
+            const image = await GeoTIFFImage.getImage();
+            
+            // ── Step 3: Extract image metadata ──
+            const width = image.getWidth();
+            const height = image.getHeight();
+            const geoBox = image.getBoundingBox();
+            
+            console.log('   ✓ GeoTIFF parsed successfully');
+            console.log('   Image dimensions:', width, 'x', height, 'pixels');
+            console.log('   Geographic bounds:', {
+                north: geoBox[3],
+                south: geoBox[1],
+                west: geoBox[0],
+                east: geoBox[2]
+            });
+            
+            // ── Step 4: Read the raster data (pixel values) ──
+            console.log('   Reading raster data...');
+            const raster = await image.readRasters();
+            const data = raster[0]; // First band (usually the main data)
+            
+            console.log('   ✓ Raster data loaded, total pixels:', data.length);
+            console.log('   Data range: min=', Math.min(...data), ', max=', Math.max(...data));
+            
+            // ── Step 5: Create an HTML5 canvas to render the image ──
+            console.log('   Creating canvas...');
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            
+            console.log('   Canvas created:', canvas.width, 'x', canvas.height);
+            
+            // ── Step 6: Create image data structure ──
+            const imageData = ctx.createImageData(width, height);
+            const pixelData = imageData.data;
+            
+            // ── Step 7: Convert raster data to RGBA pixels ──
+            console.log('   Converting raster to RGBA pixels...');
+            
+            // Get min and max values for normalization
+            const minVal = Math.min(...data);
+            const maxVal = Math.max(...data);
+            const range = maxVal - minVal || 1; // Avoid division by zero
+            
+            // Loop through each pixel in the raster
+            for (let i = 0; i < data.length; i++) {
+                // Normalize value from [minVal, maxVal] to [0, 255]
+                const normalized = ((data[i] - minVal) / range) * 255;
+                const value = Math.floor(normalized);
+                
+                // Set RGBA values for this pixel
+                pixelData[i * 4]     = value;      // Red channel
+                pixelData[i * 4 + 1] = value;      // Green channel
+                pixelData[i * 4 + 2] = value;      // Blue channel
+                pixelData[i * 4 + 3] = 255;        // Alpha channel (fully opaque)
+            }
+            
+            console.log('   ✓ Pixels converted to RGBA');
+            
+            // ── Step 8: Draw the pixels onto the canvas ──
+            console.log('   Drawing to canvas...');
+            ctx.putImageData(imageData, 0, 0);
+            console.log('   ✓ Image drawn to canvas');
+            
+            // ── Step 9: Convert canvas to data URL (image) ──
+            console.log('   Converting canvas to image...');
+            const canvasDataUrl = canvas.toDataURL();
+            console.log('   ✓ Canvas converted to data URL');
+            
+            // ── Step 10: Calculate map bounds for the image ──
+            // GeoTIFF bounds are in [west, south, east, north] format
+            // Leaflet expects [[south, west], [north, east]] format
+            const imageBounds = [
+                [geoBox[1], geoBox[0]],  // Southwest corner: [latitude, longitude]
+                [geoBox[3], geoBox[2]]   // Northeast corner: [latitude, longitude]
+            ];
+            
+            console.log('   Map bounds calculated:', imageBounds);
+            
+            // ── Step 11: Create Leaflet image overlay ──
+            console.log('   Creating Leaflet image overlay...');
+            const imageOverlay = L.imageOverlay(canvasDataUrl, imageBounds, {
+                opacity: 1.0,                    // 1.0 = fully opaque (nothing shows underneath)
+                interactive: false,               // Don't respond to mouse clicks
+                crossOrigin: 'anonymous',         // Allow CORS
+                className: 'cog-overlay'         // CSS class for styling if needed
+            });
+            
+            // ── Step 12: Add the image to the map ──
+            console.log('   Adding image overlay to map...');
+            imageOverlay.addTo(map);
+            console.log('🟢 COG layer successfully added to map!');
+            
+            // Return the layer in case you need to reference it later
+            return imageOverlay;
+            
+        } catch (error) {
+            console.error('🔴 Error loading COG:', error);
+            console.error('   Error details:', error.message);
+            console.error('   Stack:', error.stack);
+            return null;
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════════
+    // Initialize the map when page loads
+    // ══════════════════════════════════════════════════════════════════════════════
     window.addEventListener('load', function() {
         const center = [SITE_LAT, SITE_LNG];
-        const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 20, attribution: '© OpenStreetMap' });
-        const map = L.map('map', { layers: [osm], center: center, zoom: 15, preferCanvas: true, maxZoom: 22 });
+        const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
+            maxZoom: 20, 
+            attribution: '© OpenStreetMap' 
+        });
+        const map = L.map('map', { 
+            layers: [osm], 
+            center: center, 
+            zoom: 15, 
+            preferCanvas: true, 
+            maxZoom: 22 
+        });
 
-        // Add orthomosaic layer if available
+        // Add flight orthomosaic layer if available
         if (FLIGHT_URL && FLIGHT_URL !== '') {
             try {
-                const drone = L.tileLayer(FLIGHT_URL, { tms: true, opacity: 1.0, minZoom: 13, maxNativeZoom: 21, maxZoom: 22 });
+                console.log('Loading flight orthomosaic from:', FLIGHT_URL);
+                const drone = L.tileLayer(FLIGHT_URL, { 
+                    tms: true, 
+                    opacity: 1.0, 
+                    minZoom: 13, 
+                    maxNativeZoom: 21, 
+                    maxZoom: 22 
+                });
                 drone.addTo(map);
                 L.control.layers({ 'OpenStreetMap': osm }, { 'Orthomosaic': drone }).addTo(map);
+                console.log('✓ Flight orthomosaic layer added');
             } catch (e) {
                 console.error('Failed to add drone layer', e);
             }
         }
 
-        // Add Obscure layers (Cloud Optimized GeoTIFFs) — always visible, not toggleable
+        // Add COG layers on top (always visible, opaque)
         if (OBSCURES && OBSCURES.length > 0) {
-            console.log('Loading', OBSCURES.length, 'Obscure layers');
+            console.log('Loading', OBSCURES.length, 'COG layer(s)');
             OBSCURES.forEach((obscure, idx) => {
-                try {
-                    const obscureLayer = L.tileLayer(obscure.aws_url, {
-                        tms: true,
-                        opacity: 0.9,
-                        minZoom: 13,
-                        maxNativeZoom: 21,
-                        maxZoom: 22,
-                        crossOrigin: 'anonymous',
-                        attribution: `© ${obscure.name || 'Obscure Layer ' + (idx + 1)}`
-                    });
-                    obscureLayer.addTo(map);
-                    console.log('Added Obscure layer:', obscure.name);
-                } catch (e) {
-                    console.error('Failed to add obscure layer:', obscure.name, e);
-                }
+                console.log('Processing COG:', obscure.name || 'Obscure Layer ' + (idx + 1));
+                loadCOGLayer(obscure.aws_url, map).then(layer => {
+                    if (layer) {
+                        console.log('✓ COG layer ' + (idx + 1) + ' added to map');
+                    }
+                });
             });
+        } else {
+            console.log('No COG layers to load');
         }
     });
     </script>
