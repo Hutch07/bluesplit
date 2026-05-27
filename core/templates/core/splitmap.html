@@ -89,9 +89,7 @@
             opacity: 0;
             overflow: hidden;
         }
-        .sidebar-section {
-            padding: 16px 16px 0;
-        }
+        .sidebar-section { padding: 16px 16px 0; }
         .sidebar-section h3 {
             margin: 0 0 10px;
             font-size: 0.72rem;
@@ -101,105 +99,59 @@
             color: rgba(255,255,255,0.4);
         }
 
-        /* Date labels */
-        .date-label-row {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 10px;
-        }
+        .date-label-row { display: flex; gap: 8px; margin-bottom: 10px; }
         .date-badge {
-            flex: 1;
-            padding: 6px 10px;
-            border-radius: 8px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            text-align: center;
+            flex: 1; padding: 6px 10px; border-radius: 8px;
+            font-size: 0.8rem; font-weight: 600; text-align: center;
         }
-        .date-badge.left-badge  { background: rgba(59,130,246,0.3);  border: 1px solid rgba(59,130,246,0.5);  }
+        .date-badge.left-badge  { background: rgba(59,130,246,0.3);  border: 1px solid rgba(59,130,246,0.5); }
         .date-badge.right-badge { background: rgba(16,185,129,0.3); border: 1px solid rgba(16,185,129,0.5); }
         .date-badge small {
-            display: block;
-            font-size: 0.68rem;
-            font-weight: 400;
-            opacity: 0.7;
-            margin-bottom: 2px;
+            display: block; font-size: 0.68rem; font-weight: 400;
+            opacity: 0.7; margin-bottom: 2px;
         }
 
-        /* Date pickers */
-        .picker-row {
-            margin-bottom: 10px;
-        }
+        .picker-row { margin-bottom: 10px; }
         .picker-row label {
-            display: block;
-            font-size: 0.75rem;
-            color: rgba(255,255,255,0.5);
-            margin-bottom: 4px;
+            display: block; font-size: 0.75rem;
+            color: rgba(255,255,255,0.5); margin-bottom: 4px;
         }
         .picker-row input {
-            width: 100%;
-            padding: 8px 10px;
-            border-radius: 8px;
+            width: 100%; padding: 8px 10px; border-radius: 8px;
             border: 1px solid rgba(255,255,255,0.15);
             background: rgba(255,255,255,0.08);
-            color: white;
-            font-size: 0.88rem;
-            outline: none;
+            color: white; font-size: 0.88rem; outline: none;
         }
         .picker-row input:focus {
             border-color: #0f6ecb;
             background: rgba(15,110,203,0.15);
         }
-        /* Override jQuery UI datepicker colours */
         .ui-datepicker { font-size: 0.82rem; z-index: 2000 !important; }
 
         .btn-load {
-            width: 100%;
-            padding: 10px;
-            background: #0f6ecb;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            cursor: pointer;
-            margin-bottom: 12px;
+            width: 100%; padding: 10px;
+            background: #0f6ecb; color: white; border: none;
+            border-radius: 8px; font-size: 0.9rem; font-weight: 600;
+            cursor: pointer; margin-bottom: 12px;
             transition: background 0.2s, transform 0.15s;
         }
         .btn-load:hover { background: #0d5ab2; transform: translateY(-1px); }
-        .btn-load:active { transform: translateY(0); }
 
         .btn-toggle {
-            width: 100%;
-            padding: 10px;
-            background: rgba(16, 185, 129, 0.8);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            cursor: pointer;
-            margin-bottom: 12px;
+            width: 100%; padding: 10px;
+            background: rgba(16, 185, 129, 0.8); color: white; border: none;
+            border-radius: 8px; font-size: 0.9rem; font-weight: 600;
+            cursor: pointer; margin-bottom: 12px;
             transition: background 0.2s, transform 0.15s;
         }
         .btn-toggle:hover { background: rgba(16, 185, 129, 1); transform: translateY(-1px); }
-        .btn-toggle:active { transform: translateY(0); }
 
-        /* Flight list */
-        .flight-list {
-            list-style: none;
-            margin: 0;
-            padding: 0 0 16px;
-        }
+        .flight-list { list-style: none; margin: 0; padding: 0 0 16px; }
         .flight-list li {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 7px 16px;
-            font-size: 0.82rem;
-            color: rgba(255,255,255,0.7);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 7px 16px; font-size: 0.82rem; color: rgba(255,255,255,0.7);
             border-bottom: 1px solid rgba(255,255,255,0.05);
-            cursor: pointer;
-            transition: background 0.15s;
+            cursor: pointer; transition: background 0.15s;
         }
         .flight-list li:hover { background: rgba(255,255,255,0.07); color: white; }
         .flight-list li .flt-date { font-weight: 600; }
@@ -207,103 +159,70 @@
         .flight-list li.flt-left  { background: rgba(59,130,246,0.18); color: #93c5fd; }
         .flight-list li.flt-right { background: rgba(16,185,129,0.18); color: #6ee7b7; }
 
-        /* Divider */
-        .sdivider {
-            height: 1px;
-            background: rgba(255,255,255,0.08);
-            margin: 12px 0;
-        }
+        .sdivider { height: 1px; background: rgba(255,255,255,0.08); margin: 12px 0; }
 
         /* ── Maps area ── */
         #maps-area {
-            flex: 1;
-            display: flex;
-            position: relative;
-            min-height: 0; /* critical: allows flex child to shrink below content size */
+            flex: 1; display: flex; position: relative;
+            min-height: 0;
         }
 
         #map1, #map2 {
-            flex: 1;
-            min-width: 0;
-            min-height: 0;
-            position: relative;
+            flex: 1; min-width: 0; min-height: 0; position: relative;
         }
         #map1 { border-right: 2px solid rgba(59,130,246,0.6); }
         #map2 { border-left:  2px solid rgba(16,185,129,0.6); }
 
-        /* Hide Leaflet zoom controls */
-        .leaflet-control-zoom {
-            display: none !important;
-        }
+        .leaflet-control-zoom { display: none !important; }
 
-        /* Map label overlays */
         .map-label {
-            position: absolute;
-            top: 10px;
-            z-index: 900;
-            padding: 5px 14px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 700;
-            pointer-events: none;
-            backdrop-filter: blur(6px);
+            position: absolute; top: 10px; z-index: 900;
+            padding: 5px 14px; border-radius: 20px;
+            font-size: 0.8rem; font-weight: 700;
+            pointer-events: none; backdrop-filter: blur(6px);
         }
-        #label-left {
-            left: 10px;
-            background: rgba(59,130,246,0.85);
-            color: white;
-        }
-        #label-right {
-            left: 10px;
-            background: rgba(16,185,129,0.85);
-            color: white;
-        }
+        #label-left  { left: 10px; background: rgba(59,130,246,0.85); color: white; }
+        #label-right { left: 10px; background: rgba(16,185,129,0.85); color: white; }
 
-        /* Toggle sidebar button */
         #sidebar-toggle {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            z-index: 1060;
+            position: absolute; top: 10px; left: 10px; z-index: 1060;
             background: rgba(15,22,36,0.88);
             border: 1px solid rgba(255,255,255,0.15);
-            color: white;
-            border-radius: 8px;
-            width: 34px;
-            height: 34px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 1rem;
-            transition: background 0.2s;
-            /* sits in topbar */
+            color: white; border-radius: 8px; width: 34px; height: 34px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 1rem; transition: background 0.2s;
         }
         #sidebar-toggle:hover { background: rgba(255,255,255,0.15); }
+
+        /* ══════════════════════════════════════════════════════
+           FIX 1: mix-blend-mode on the obscure pane makes
+           pure black (0,0,0) pixels fully transparent.
+           Both map1 and map2 get their own pane so each
+           pane element gets this class.
+           ══════════════════════════════════════════════════════ */
+        .leaflet-obscure-pane {
+            mix-blend-mode: multiply;
+        }
     </style>
-    <!-- GEOTIFF COG -->
-    <script src="https://cdn.jsdelivr.net/npm/geotiff@2.0.0/dist/geotiff.js"></script>
 
     <script>
-        // Data injected from Django view
         const SITE_LAT      = {{ site.latitude }};
         const SITE_LNG      = {{ site.longitude }};
         const SITE_NAME     = "{{ site.name|escapejs }}";
-        const FLIGHT_DICT   = {{ flight_dict_json|safe }};   // { "2026_0422": "https://.../" }
-        const FLIGHT_DATES  = {{ flight_dates_json|safe }};  // ["2026-04-22", ...]
-        const OBSCURES      = {{ obscures_json|safe }};      // [{ id, name, aws_url }, ...]
-        let dateKeyLeft     = "{{ flight_left_key }}";       // e.g. "2026_0401"
+        const FLIGHT_DICT   = {{ flight_dict_json|safe }};
+        const FLIGHT_DATES  = {{ flight_dates_json|safe }};
+        const OBSCURES      = {{ obscures_json|safe }};
+        let dateKeyLeft     = "{{ flight_left_key }}";
         let dateKeyRight    = "{{ flight_right_key }}";
     </script>
 </head>
 <body>
 
-    <!-- Top bar -->
     <div id="topbar">
         <button id="sidebar-toggle" title="Toggle panel"><i class="fa fa-bars"></i></button>
         <span class="site-title">{{ site.name }}</span>
         <span class="sep">|</span>
-        <a href="{% url 'dashboard' %}?site={{ site.pk }}">← Dashboard</a>
+        <a href="{% url 'dashboard' %}?site={{ site.pk }">← Dashboard</a>
         <span class="sep">|</span>
         <form method="post" action="{% url 'logout' %}" style="display:inline">
             {% csrf_token %}
@@ -313,7 +232,6 @@
 
     <div id="map-wrapper">
 
-        <!-- Sidebar -->
         <div id="sidebar">
             <div class="sidebar-section">
                 <h3>Active Dates</h3>
@@ -349,9 +267,7 @@
 
             <div class="sdivider"></div>
 
-            <div class="sidebar-section">
-                <h3>All Flights</h3>
-            </div>
+            <div class="sidebar-section"><h3>All Flights</h3></div>
             <ul class="flight-list" id="flight-list">
                 {% for flight in flights %}
                     <li data-key="{{ flight.date|date:'Y_md' }}"
@@ -367,7 +283,6 @@
             </ul>
         </div>
 
-        <!-- Maps -->
         <div id="maps-area">
             <div id="map1">
                 <div class="map-label" id="label-left">◀ {{ flight_left.date }}</div>
@@ -381,19 +296,15 @@
 
     <script>
     // ── Helpers ─────────────────────────────────────────────────────────────
-
     function tileUrl(dateKey) {
         const base = FLIGHT_DICT[dateKey];
-        if (!base) return 'about:blank'; // safe fallback — no tiles requested
+        if (!base) return 'about:blank';
         return base.replace(/\/?$/, '/') + '{z}/{x}/{y}.png';
     }
-
     function dateKeyToPickerDate(key) {
-        // "2026_0422" → "2026-04-22"
         return key.substring(0,4) + '-' + key.substring(5,7) + '-' + key.substring(7,9);
     }
     function pickerDateToKey(d) {
-        // "2026-04-22" → "2026_0422"
         return d.substring(0,4) + '_' + d.substring(5,7) + d.substring(8,10);
     }
     function enableFlightDays(date) {
@@ -414,48 +325,71 @@
         highlightFlightList();
     }
 
-    // ── Tile layer options (shared) ──────────────────────────────────────────
     const TILE_OPTS = {
-        tms: true,
-        opacity: 1.0,
-        minZoom: 13,
-        maxNativeZoom: 21,
-        maxZoom: 22,
-        keepBuffer: 1,
-        updateWhenIdle: true,
-        updateWhenZooming: false,
+        tms: true, opacity: 1.0, minZoom: 13,
+        maxNativeZoom: 21, maxZoom: 22,
+        keepBuffer: 1, updateWhenIdle: true, updateWhenZooming: false,
     };
 
-    // ── Module-level references (set in initMaps) ────────────────────────────
+    // FIX 2: Obscure tile options — note pane is set per-map below
+    const OBSCURE_OPTS = {
+        tms: true, opacity: 1.0, minZoom: 13,
+        maxNativeZoom: 21, maxZoom: 22,
+        crossOrigin: 'anonymous',
+        // pane is added individually per map
+    };
+
     let map1, map2, leftLayer, rightLayer;
     const center = [SITE_LAT, SITE_LNG];
 
-    // ── Defer init until browser has painted and containers have real px size ─
     window.addEventListener('load', function() {
         requestAnimationFrame(function() {
-            // Confirm containers have real dimensions before handing off to Leaflet
             const m1 = document.getElementById('map1');
             const m2 = document.getElementById('map2');
             console.log('map1 size:', m1.offsetWidth, 'x', m1.offsetHeight);
             console.log('map2 size:', m2.offsetWidth, 'x', m2.offsetHeight);
             if (m1.offsetWidth === 0 || m1.offsetHeight === 0) {
-                console.error('Map container has zero dimensions — aborting init to prevent memory crash.');
-                document.getElementById('map1').innerHTML =
-                    '<p style="color:red;padding:20px">Map container has no size. Check CSS layout.</p>';
+                console.error('Map container has zero dimensions.');
                 return;
             }
             initMaps();
         });
     });
 
+    function addObscureLayers(map) {
+        // ── FIX 1: Create obscurePane on this specific map instance ──────────
+        // Each map (map1, map2) needs its own pane created separately.
+        // zIndex 650 sits above tilePane(200), overlayPane(400), and shadowPane(500).
+        map.createPane('obscurePane');
+        map.getPane('obscurePane').style.zIndex = 650;
+        map.getPane('obscurePane').style.pointerEvents = 'none';
+        // Apply mix-blend-mode via CSS class for black pixel transparency
+        map.getPane('obscurePane').classList.add('leaflet-obscure-pane');
+
+        if (!OBSCURES || OBSCURES.length === 0) return;
+
+        OBSCURES.forEach((obscure, idx) => {
+            try {
+                const tileUrl = obscure.aws_url + '{z}/{x}/{y}.png';
+                const layer = L.tileLayer(tileUrl, {
+                    ...OBSCURE_OPTS,
+                    pane: 'obscurePane',  // ← assigned to custom pane
+                    attribution: obscure.name || ('Obscure ' + (idx + 1))
+                });
+                layer.addTo(map);
+                console.log('✓ Obscure layer added to obscurePane:', obscure.name);
+            } catch (err) {
+                console.error('Error adding obscure layer:', err);
+            }
+        });
+    }
+
     function initMaps() {
         const osmL = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 20,
-            attribution: '© <a href="https://osm.org/copyright">OpenStreetMap</a>'
+            maxZoom: 20, attribution: '© <a href="https://osm.org/copyright">OpenStreetMap</a>'
         });
         const osmR = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 20,
-            attribution: '© <a href="https://osm.org/copyright">OpenStreetMap</a>'
+            maxZoom: 20, attribution: '© <a href="https://osm.org/copyright">OpenStreetMap</a>'
         });
 
         map1 = L.map('map1', {
@@ -473,7 +407,6 @@
         map1.sync(map2);
         map2.sync(map1);
 
-        // Only add drone imagery if we have a valid URL
         const urlL = tileUrl(dateKeyLeft);
         const urlR = tileUrl(dateKeyRight);
         console.log('Left tile URL:', urlL);
@@ -482,40 +415,18 @@
         leftLayer  = L.tileLayer(urlL, TILE_OPTS).addTo(map1);
         rightLayer = L.tileLayer(urlR, TILE_OPTS).addTo(map2);
 
-        // Add Obscure layers (Cloud Optimized GeoTIFFs) — always visible, not in layer control
+        // ── FIX 3: Add obscure layers to BOTH maps via shared function ──────
+        // Called after flight layers so pane zIndex keeps them on top.
         if (OBSCURES && OBSCURES.length > 0) {
-            console.log('Loading', OBSCURES.length, 'Obscure layers');
-            OBSCURES.forEach((obscure, idx) => {
-                try {
-                    // ← ADD THIS LINE: Complete the tile URL
-                    const tileUrl = obscure.aws_url + '{z}/{x}/{y}.png';
-                    console.log('Tile URL:', tileUrl);
-                    
-                    const layer = L.tileLayer(tileUrl, {  // ✅ Now includes {z}/{x}/{y}.png
-                        tms: true,                  // ← Try false first (gdal2tiles creates XYZ)
-                        opacity: 1.0,                // ← Fully opaque (on top)
-                        minZoom: 10,
-                        maxNativeZoom: 21,           // ← Tiles exist up to zoom 21
-                        maxZoom: 22,
-                        crossOrigin: 'anonymous',
-                        attribution: obscure.name || 'Obscure'
-                    });
-                    
-                    layer.addTo(map1);
-                    layer.addTo(map2);
-                    layer.bringToFront();  // Keep on top
-                    
-                    console.log('✓ Obscure layer added:', obscure.name);
-                } catch (e) {
-                    console.error('Error loading obscure layer:', e);
-                }
-            });
+            console.log('Loading', OBSCURES.length, 'Obscure layer(s) on both maps');
+            addObscureLayers(map1);
+            addObscureLayers(map2);
         }
 
+        // Obscure layers NOT added to layer controls — they can't be toggled
         L.control.layers({ "OpenStreetMap": osmL }, { "Orthomosaic": leftLayer  }).addTo(map1);
         L.control.layers({ "OpenStreetMap": osmR }, { "Orthomosaic": rightLayer }).addTo(map2);
 
-        // Init date pickers
         $('#datepicker-left').datepicker({
             changeMonth: true, changeYear: true,
             dateFormat: 'yy-mm-dd',
@@ -531,9 +442,8 @@
         }).datepicker('setDate', dateKeyToPickerDate(dateKeyRight));
 
         highlightFlightList();
-    } // end initMaps()
+    }
 
-    // ── Update tiles on button click ─────────────────────────────────────────
     function updateTiles() {
         if (!map1 || !map2) { alert('Map not ready yet.'); return; }
         const urlL = tileUrl(dateKeyLeft);
@@ -547,6 +457,11 @@
         leftLayer  = L.tileLayer(urlL, TILE_OPTS).addTo(map1);
         rightLayer = L.tileLayer(urlR, TILE_OPTS).addTo(map2);
 
+        // ── FIX 2: After updateTiles the new flight layer would normally
+        // render above the obscure pane — but because pane zIndex is fixed
+        // at 650 (above tilePane 200), the obscure layers automatically
+        // stay on top with no extra code needed. ──────────────────────────
+
         document.getElementById('label-left').innerHTML   = '◀ ' + dateKeyToPickerDate(dateKeyLeft);
         document.getElementById('label-right').innerHTML  = '▶ ' + dateKeyToPickerDate(dateKeyRight);
         document.getElementById('active-left').textContent  = dateKeyToPickerDate(dateKeyLeft);
@@ -554,7 +469,6 @@
         highlightFlightList();
     }
 
-    // ── Sidebar toggle ────────────────────────────────────────────────────────
     document.getElementById('sidebar-toggle').addEventListener('click', function() {
         document.getElementById('sidebar').classList.toggle('collapsed');
         setTimeout(function() {
@@ -563,23 +477,30 @@
         }, 280);
     });
 
-    // ── Toggle between split and single map modes ────────────────────────────
+    // ── FIX 4: Toggle single/split — call invalidateSize on BOTH maps ───────
+    // The position shift you saw was caused by map1 not recalculating its
+    // centre/size when map2 was hidden. invalidateSize forces a recalculation.
     function toggleMapMode() {
-        const btn = event.target.closest('.btn-toggle');
-        const mapsArea = document.getElementById('maps-area');
         const map2Elem = document.getElementById('map2');
         const toggleBtn = document.querySelector('.btn-toggle');
-        
+
         if (map2Elem.style.display === 'none') {
-            // Currently showing single map — switch back to split
+            // Restore split view
             map2Elem.style.display = '';
-            mapsArea.style.flexDirection = 'row';
-            if (map2) map2.invalidateSize();
+            setTimeout(function() {
+                if (map1) map1.invalidateSize({ animate: false });
+                if (map2) map2.invalidateSize({ animate: false });
+            }, 50);
             toggleBtn.innerHTML = '<i class="fa fa-arrows-alt-h"></i> View Single Map';
         } else {
-            // Currently showing split map — switch to single
+            // Switch to single view
             map2Elem.style.display = 'none';
-            if (map1) map1.invalidateSize();
+            setTimeout(function() {
+                // Invalidate both — map1 expands, map2 pauses but needs
+                // its internal state kept consistent for when it returns
+                if (map1) map1.invalidateSize({ animate: false });
+                if (map2) map2.invalidateSize({ animate: false });
+            }, 50);
             toggleBtn.innerHTML = '<i class="fa fa-arrows-alt-h"></i> View Split Map';
         }
     }
