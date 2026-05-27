@@ -114,15 +114,21 @@
             maxZoom: 22
         });
 
-        // ── Create the obscure pane BEFORE any layers are added ─────────────────
-        // Default z-indices: tilePane=200, overlayPane=400
-        // 650 puts obscure above everything including overlays
+        // ── Create panes ────────────────────────────────────────────────────────
+        // Layer order (bottom → top):
+        //   tilePane(200)    = OSM basemap
+        //   tilePane(200)    = Orthomosaic flight tiles
+        //   geojsonPane(450) = GeoJSON vectors  ← toggleable in layer control
+        //   obscurePane(650) = Obscure masking tiles ← NOT in layer control
+
+        map.createPane('geojsonPane');
+        map.getPane('geojsonPane').style.zIndex = 450;
+
         map.createPane('obscurePane');
         map.getPane('obscurePane').style.zIndex = 650;
-        // Disable pointer events so the pane never blocks map interaction
         map.getPane('obscurePane').style.pointerEvents = 'none';
 
-        console.log('✓ obscurePane created (zIndex=650, full opacity)');
+        console.log('✓ geojsonPane(450) and obscurePane(650) created');
 
         // ── Base map ────────────────────────────────────────────────────────────
         const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -147,21 +153,72 @@
             console.log('✓ Flight layer added');
         }
 
-        // Layer control - flight is toggleable, obscure layers are NOT listed here
-        const overlays = droneLayer ? { 'Orthomosaic': droneLayer } : {};
+        // ── Build overlay object — GeoJSON layers added here so they appear
+        //    in the layer control checked (visible) by default ────────────────
+        const overlays = {};
+        if (droneLayer) overlays['Orthomosaic'] = droneLayer;
+
+        if (GEOJSONS && GEOJSONS.length > 0) {
+            console.log('Loading', GEOJSONS.length, 'GeoJSON layer(s)');
+            GEOJSONS.forEach(function(gj) {
+                const color = gj.color || 'cornflowerblue';
+                const gjStyle = {
+                    color:       color,
+                    weight:      2,
+                    opacity:     1,
+                    fillColor:   color,
+                    fillOpacity: 0.2,
+                    pane:        'geojsonPane'
+                };
+
+                // Create a layerGroup placeholder so the control checkbox
+                // appears immediately, before the async fetch completes
+                const group = L.layerGroup([], { pane: 'geojsonPane' }).addTo(map);
+                overlays[gj.name] = group;
+
+                fetch(gj.url)
+                    .then(function(r) {
+                        if (!r.ok) throw new Error('HTTP ' + r.status);
+                        return r.json();
+                    })
+                    .then(function(data) {
+                        const gjLayer = L.geoJSON(data, {
+                            pane: 'geojsonPane',
+                            style: function() { return gjStyle; },
+                            pointToLayer: function(feature, latlng) {
+                                return L.circleMarker(latlng, {
+                                    pane: 'geojsonPane',
+                                    radius: 6,
+                                    ...gjStyle
+                                });
+                            },
+                            onEachFeature: function(feature, layer) {
+                                const label = (feature.properties && feature.properties.name)
+                                    ? feature.properties.name
+                                    : gj.name;
+                                layer.bindTooltip(label, { sticky: true });
+                            }
+                        });
+                        group.addLayer(gjLayer);
+                        console.log('✓ GeoJSON loaded:', gj.name, '(color:', color + ')');
+                    })
+                    .catch(function(err) {
+                        console.error('GeoJSON fetch error:', gj.name, err);
+                    });
+            });
+        }
+
+        // ── Layer control — Obscure NOT listed, GeoJSONs ARE listed ────────────
         L.control.layers({ 'OpenStreetMap': osm }, overlays).addTo(map);
 
-        // ── Obscure tile layers → always in obscurePane ─────────────────────────
+        // ── Obscure tile layers → obscurePane (added LAST so they stay on top) ─
         if (OBSCURES && OBSCURES.length > 0) {
             console.log('Loading', OBSCURES.length, 'Obscure layer(s)');
-
-            OBSCURES.forEach((obscure, idx) => {
+            OBSCURES.forEach(function(obscure, idx) {
                 try {
                     const layerName = obscure.name || ('Obscure ' + (idx + 1));
                     const tileUrl   = obscure.aws_url + '{z}/{x}/{y}.png';
-
                     console.log('  Layer:', layerName, '→', tileUrl);
-
                     const layer = L.tileLayer(tileUrl, {
                         tms: true,
                         opacity: 1.0,
@@ -169,55 +226,17 @@
                         maxNativeZoom: 21,
                         maxZoom: 22,
                         crossOrigin: 'anonymous',
-                        // ← KEY: assign to the custom pane
                         pane: 'obscurePane'
                     });
-
                     layer.addTo(map);
                     console.log('  ✓ Added to obscurePane:', layerName);
-
                 } catch (err) {
-                    console.error('🔴 Error loading obscure layer:', err);
+                    console.error('Error loading obscure layer:', err);
                 }
             });
-
-            console.log('🟢 All Obscure layers loaded in obscurePane (zIndex=650)');
-
+            console.log('🟢 All Obscure layers loaded in obscurePane(650)');
         } else {
             console.log('ℹ No Obscure layers for this site');
-        }
-
-        // ── Load GeoJSON layers for this site ──────────────────────────────
-        if (GEOJSONS && GEOJSONS.length > 0) {
-            console.log('Loading', GEOJSONS.length, 'GeoJSON layer(s)');
-            GEOJSONS.forEach(function(gj) {
-                const color = gj.color || 'cornflowerblue';
-                const style = {
-                    color: color,
-                    weight: 2,
-                    opacity: 1,
-                    fillColor: color,
-                    fillOpacity: 0.2
-                };
-                fetch(gj.url)
-                    .then(r => r.json())
-                    .then(data => {
-                        L.geoJSON(data, {
-                            style: style,
-                            pointToLayer: function(feature, latlng) {
-                                return L.circleMarker(latlng, {
-                                    radius: 6,
-                                    ...style
-                                });
-                            },
-                            onEachFeature: function(feature, layer) {
-                                if (gj.name) layer.bindTooltip(gj.name, { sticky: true });
-                            }
-                        }).addTo(map);
-                        console.log('✓ GeoJSON added:', gj.name, '(color:', color + ')');
-                    })
-                    .catch(err => console.error('GeoJSON fetch error:', gj.name, err));
-            });
         }
 
     });

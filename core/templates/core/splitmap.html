@@ -411,17 +411,93 @@
         leftLayer  = L.tileLayer(urlL, TILE_OPTS).addTo(map1);
         rightLayer = L.tileLayer(urlR, TILE_OPTS).addTo(map2);
 
-        // ── FIX 3: Add obscure layers to BOTH maps via shared function ──────
-        // Called after flight layers so pane zIndex keeps them on top.
+        // ── Create geojsonPane on both maps ────────────────────────────────
+        // zIndex 450: above orthomosaic tilePane(200) and overlayPane(400),
+        // but BELOW obscurePane(650). GeoJSON vectors always sit between
+        // the flight imagery and the obscure masking layer.
+        map1.createPane('geojsonPane');
+        map1.getPane('geojsonPane').style.zIndex = 450;
+        map2.createPane('geojsonPane');
+        map2.getPane('geojsonPane').style.zIndex = 450;
+
+        // ── Load GeoJSON layers — added to layer control, visible by default ─
+        // Each geojson is fetched from S3, styled by its color field,
+        // and added to BOTH maps in geojsonPane.
+        const overlaysL = { 'Orthomosaic': leftLayer  };
+        const overlaysR = { 'Orthomosaic': rightLayer };
+
+        if (GEOJSONS && GEOJSONS.length > 0) {
+            console.log('Loading', GEOJSONS.length, 'GeoJSON layer(s)');
+            GEOJSONS.forEach(function(gj) {
+                const color = gj.color || 'cornflowerblue';
+                const gjStyle = {
+                    color:       color,
+                    weight:      2,
+                    opacity:     1,
+                    fillColor:   color,
+                    fillOpacity: 0.2,
+                    pane:        'geojsonPane'
+                };
+
+                // Build a L.geoJSON layer placeholder and add to both maps.
+                // We use L.layerGroup so we can add to the layer control
+                // immediately (while the fetch is in flight).
+                const group1 = L.layerGroup([], { pane: 'geojsonPane' }).addTo(map1);
+                const group2 = L.layerGroup([], { pane: 'geojsonPane' }).addTo(map2);
+
+                // Register with layer controls so the checkbox shows right away
+                overlaysL[gj.name] = group1;
+                overlaysR[gj.name] = group2;
+
+                // Fetch and populate both groups
+                fetch(gj.url)
+                    .then(function(r) {
+                        if (!r.ok) throw new Error('HTTP ' + r.status);
+                        return r.json();
+                    })
+                    .then(function(data) {
+                        function makeGeoJsonLayer(pane) {
+                            return L.geoJSON(data, {
+                                pane: pane,
+                                style: function() { return gjStyle; },
+                                pointToLayer: function(feature, latlng) {
+                                    return L.circleMarker(latlng, {
+                                        pane: pane,
+                                        radius: 6,
+                                        ...gjStyle
+                                    });
+                                },
+                                onEachFeature: function(feature, layer) {
+                                    const label = (feature.properties && feature.properties.name)
+                                        ? feature.properties.name
+                                        : gj.name;
+                                    layer.bindTooltip(label, { sticky: true });
+                                }
+                            });
+                        }
+                        group1.addLayer(makeGeoJsonLayer('geojsonPane'));
+                        group2.addLayer(makeGeoJsonLayer('geojsonPane'));
+                        console.log('✓ GeoJSON loaded:', gj.name, '(color:', color + ')');
+                    })
+                    .catch(function(err) {
+                        console.error('GeoJSON fetch error:', gj.name, err);
+                    });
+            });
+        }
+
+        // ── Add layer controls ─────────────────────────────────────────────
+        // Obscure layers are NOT in the control — they cannot be toggled.
+        // GeoJSON layers ARE in the control — checked (visible) by default.
+        L.control.layers({ 'OpenStreetMap': osmL }, overlaysL).addTo(map1);
+        L.control.layers({ 'OpenStreetMap': osmR }, overlaysR).addTo(map2);
+
+        // ── Add obscure layers AFTER layer controls ────────────────────────
+        // Must be last so obscurePane(650) renders above geojsonPane(450).
         if (OBSCURES && OBSCURES.length > 0) {
             console.log('Loading', OBSCURES.length, 'Obscure layer(s) on both maps');
             addObscureLayers(map1);
             addObscureLayers(map2);
         }
-
-        // Obscure layers NOT added to layer controls — they can't be toggled
-        L.control.layers({ "OpenStreetMap": osmL }, { "Orthomosaic": leftLayer  }).addTo(map1);
-        L.control.layers({ "OpenStreetMap": osmR }, { "Orthomosaic": rightLayer }).addTo(map2);
 
         $('#datepicker-left').datepicker({
             changeMonth: true, changeYear: true,
