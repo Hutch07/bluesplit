@@ -55,62 +55,42 @@
             font-size: 0.88rem;
             transition: color 0.2s;
         }
-        .top-actions:hover {
-            color: white;
-        }
-        .header-sep {
-            color: rgba(255,255,255,0.3);
-            margin: 0 8px;
-        }
-        .topbar-spacer {
-            flex: 1;
-        }
-        .topbar-info {
-            color: rgba(255,255,255,0.7);
-            font-size: 0.88rem;
-        }
-        .logout-form {
-            display: inline;
-            margin-left: 8px;
-        }
+        .top-actions:hover { color: white; }
+        .header-sep { color: rgba(255,255,255,0.3); margin: 0 8px; }
+        .topbar-spacer { flex: 1; }
+        .topbar-info { color: rgba(255,255,255,0.7); font-size: 0.88rem; }
+        .logout-form { display: inline; margin-left: 8px; }
         .logout-btn {
-            background: none;
-            border: none;
-            color: rgba(255,255,255,0.65);
-            cursor: pointer;
-            padding: 0;
-            font-family: inherit;
-            font-size: 0.88rem;
-            transition: color 0.2s;
+            background: none; border: none;
+            color: rgba(255,255,255,0.65); cursor: pointer;
+            padding: 0; font-family: inherit; font-size: 0.88rem; transition: color 0.2s;
         }
-        .logout-btn:hover {
-            color: white;
-        }
+        .logout-btn:hover { color: white; }
 
-        /* ══════════════════════════════════════════════════════════════════════════════ */
-        /* Obscure Layer Styling - Makes black pixels appear transparent */
-        /* ══════════════════════════════════════════════════════════════════════════════ */
-        .obscure-layer {
-            /* CSS filter to make black pixels lighter/transparent */
-            filter: brightness(1.02) contrast(1.01);
+        /* ══════════════════════════════════════════════════════
+           Obscure pane tiles - make black pixels transparent
+           The CSS mix-blend-mode multiply makes black (0,0,0)
+           fully transparent against any background.
+           ══════════════════════════════════════════════════════ */
+        .leaflet-obscure-pane {
+            mix-blend-mode: multiply;
         }
     </style>
 
     <script>
-        // Data injected from Django view
-        const SITE_LAT = {{ site.latitude }};
-        const SITE_LNG = {{ site.longitude }};
-        const SITE_NAME = "{{ site.name|escapejs }}";
+        const SITE_LAT   = {{ site.latitude }};
+        const SITE_LNG   = {{ site.longitude }};
+        const SITE_NAME  = "{{ site.name|escapejs }}";
         const FLIGHT_DATE = "{{ flight.date }}";
-        const FLIGHT_URL = "{{ flight_url }}"; // tile pattern with {z}/{x}/{y}.png
-        const OBSCURES = {{ obscures_json|safe }}; // Obscure tile layers
+        const FLIGHT_URL = "{{ flight_url }}";
+        const OBSCURES   = {{ obscures_json|safe }};
     </script>
 </head>
 <body>
     <div id="topbar">
         <a href="{% url 'dashboard' %}?site={{ site.pk }}" class="top-actions">← Dashboard</a>
         <span class="header-sep">|</span>
-        <div style="font-weight:700; font-size: 0.95rem;">{{ site.name }}</div>
+        <div style="font-weight:700; font-size:0.95rem;">{{ site.name }}</div>
         <div class="topbar-spacer"></div>
         <div class="topbar-info">Last flight: {{ flight.date }}</div>
         <form method="post" action="{% url 'logout' %}" class="logout-form">
@@ -123,104 +103,93 @@
     <div class="map-label">{{ flight.date }}</div>
 
     <script>
-    // ══════════════════════════════════════════════════════════════════════════════
-    // Initialize the map when page loads
-    // ══════════════════════════════════════════════════════════════════════════════
-    window.addEventListener('load', function() {
+    window.addEventListener('load', function () {
+
         const center = [SITE_LAT, SITE_LNG];
-        
-        // Base map (OpenStreetMap)
-        const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
-            maxZoom: 20, 
-            attribution: '© OpenStreetMap' 
-        });
-        
-        // Create map with just the basemap initially
-        const map = L.map('map', { 
-            layers: [osm], 
-            center: center, 
-            zoom: 15, 
-            preferCanvas: true, 
-            maxZoom: 22 
+
+        // ── Create map ──────────────────────────────────────────────────────────
+        const map = L.map('map', {
+            center: center,
+            zoom: 15,
+            preferCanvas: true,
+            maxZoom: 22
         });
 
-        console.log('🔵 Map initialized at', center);
-
-        // ── Create custom pane for obscure layers ──
-        // This pane will ALWAYS be on top regardless of layer toggling
-        // Default pane z-indices: tilePane=200, overlayPane=400
-        // We set obscurePane to 650 so it's always above everything
+        // ── Create the obscure pane BEFORE any layers are added ─────────────────
+        // Default z-indices: tilePane=200, overlayPane=400
+        // 650 puts obscure above everything including overlays
         map.createPane('obscurePane');
         map.getPane('obscurePane').style.zIndex = 650;
-        
-        console.log('✓ Custom pane "obscurePane" created with zIndex=650');
+        // Disable pointer events so the pane never blocks map interaction
+        map.getPane('obscurePane').style.pointerEvents = 'none';
+        // Apply the CSS class for mix-blend-mode black transparency
+        map.getPane('obscurePane').classList.add('leaflet-obscure-pane');
 
-        // ── Add flight orthomosaic layer (toggleable) ──
+        console.log('✓ obscurePane created (zIndex=650, mix-blend-mode=multiply)');
+
+        // ── Base map ────────────────────────────────────────────────────────────
+        const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 20,
+            attribution: '© OpenStreetMap'
+        });
+        osm.addTo(map);
+
+        // ── Flight orthomosaic (toggleable) ────────────────────────────────────
+        let droneLayer = null;
         if (FLIGHT_URL && FLIGHT_URL !== '') {
-            try {
-                console.log('Loading flight orthomosaic from:', FLIGHT_URL);
-                const drone = L.tileLayer(FLIGHT_URL, { 
-                    tms: true, 
-                    opacity: 1.0, 
-                    minZoom: 13, 
-                    maxNativeZoom: 21, 
-                    maxZoom: 22,
-                    attribution: 'Flight Data'
-                });
-                drone.addTo(map);
-                console.log('✓ Flight orthomosaic layer added');
-                
-                // Add layer control for basemap + flight ONLY
-                // Obscure layers are in their own pane (NOT in layer control)
-                L.control.layers({ 'OpenStreetMap': osm }, { 'Orthomosaic': drone }).addTo(map);
-            } catch (e) {
-                console.error('Failed to add drone layer', e);
-            }
+            console.log('Loading flight orthomosaic:', FLIGHT_URL);
+            droneLayer = L.tileLayer(FLIGHT_URL, {
+                tms: true,
+                opacity: 1.0,
+                minZoom: 13,
+                maxNativeZoom: 21,
+                maxZoom: 22,
+                attribution: 'Flight Data'
+            });
+            droneLayer.addTo(map);
+            console.log('✓ Flight layer added');
         }
 
-        // ── Add Obscure tile layers to custom pane (always visible, not toggleable) ──
-        // These use standard XYZ tile format with {z}/{x}/{y}.png
+        // Layer control - flight is toggleable, obscure layers are NOT listed here
+        const overlays = droneLayer ? { 'Orthomosaic': droneLayer } : {};
+        L.control.layers({ 'OpenStreetMap': osm }, overlays).addTo(map);
+
+        // ── Obscure tile layers → always in obscurePane ─────────────────────────
         if (OBSCURES && OBSCURES.length > 0) {
-            console.log('Loading', OBSCURES.length, 'Obscure tile layer(s)');
-            
+            console.log('Loading', OBSCURES.length, 'Obscure layer(s)');
+
             OBSCURES.forEach((obscure, idx) => {
                 try {
-                    const layerName = obscure.name || 'Tile Layer ' + (idx + 1);
-                    
-                    // Build complete tile URL by adding {z}/{x}/{y}.png
-                    const tileUrl = obscure.aws_url + '{z}/{x}/{y}.png';
-                    console.log('Processing Obscure layer:', layerName);
-                    console.log('Tile URL:', tileUrl);
-                    
-                    // Create tile layer with TMS format
+                    const layerName = obscure.name || ('Obscure ' + (idx + 1));
+                    const tileUrl   = obscure.aws_url + '{z}/{x}/{y}.png';
+
+                    console.log('  Layer:', layerName, '→', tileUrl);
+
                     const layer = L.tileLayer(tileUrl, {
-                        tms: true,                      // TMS format (GDAL default)
-                        opacity: 1.0,                   // Fully opaque - blocks everything below
+                        tms: true,
+                        opacity: 1.0,
                         minZoom: 13,
-                        maxNativeZoom: 21,              // Tiles exist up to zoom 21
+                        maxNativeZoom: 21,
                         maxZoom: 22,
                         crossOrigin: 'anonymous',
-                        attribution: layerName,
-                        className: 'obscure-layer',     // CSS class for styling (black transparency)
-                        pane: 'obscurePane'             // ← KEY: Assign to custom pane!
+                        // ← KEY: assign to the custom pane
+                        pane: 'obscurePane'
                     });
-                    
-                    // Add to map
+
                     layer.addTo(map);
-                    
-                    console.log('✓ Obscure layer ' + (idx + 1) + ' added to obscurePane:', layerName);
-                    
-                } catch (error) {
-                    console.error('🔴 Error loading Obscure layer:', error);
+                    console.log('  ✓ Added to obscurePane:', layerName);
+
+                } catch (err) {
+                    console.error('🔴 Error loading obscure layer:', err);
                 }
             });
-            
-            console.log('🟢 All Obscure layers successfully added to obscurePane!');
-            console.log('ℹ️  Obscure layers will ALWAYS stay on top due to custom pane zIndex=650');
-            
+
+            console.log('🟢 All Obscure layers loaded in obscurePane (zIndex=650)');
+
         } else {
-            console.log('ℹ️  No Obscure tile layers to load');
+            console.log('ℹ No Obscure layers for this site');
         }
+
     });
     </script>
 </body>
