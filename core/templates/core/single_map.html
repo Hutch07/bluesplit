@@ -68,13 +68,11 @@
         .logout-btn:hover { color: white; }
 
         /* ══════════════════════════════════════════════════════
-           Obscure pane tiles - make black pixels transparent
-           The CSS mix-blend-mode multiply makes black (0,0,0)
-           fully transparent against any background.
+           Obscure pane — tiles already have real alpha
+           transparency from ImageMagick processing.
+           No blend mode needed; non-transparent pixels
+           render at full opacity.
            ══════════════════════════════════════════════════════ */
-        .leaflet-obscure-pane {
-            mix-blend-mode: multiply;
-        }
     </style>
 
     <script>
@@ -84,6 +82,7 @@
         const FLIGHT_DATE = "{{ flight.date }}";
         const FLIGHT_URL = "{{ flight_url }}";
         const OBSCURES   = {{ obscures_json|safe }};
+        const GEOJSONS   = {{ geojsons_json|safe }};  // [{id, name, url, level, color}]
     </script>
 </head>
 <body>
@@ -122,11 +121,8 @@
         map.getPane('obscurePane').style.zIndex = 650;
         // Disable pointer events so the pane never blocks map interaction
         map.getPane('obscurePane').style.pointerEvents = 'none';
-        // Apply the CSS class for mix-blend-mode black transparency
-        map.getPane('obscurePane').classList.add('leaflet-obscure-pane');
 
-        console.log('✓ obscurePane created (zIndex=650, mix-blend-mode=multiply)');
-        console.log('✓ update');
+        console.log('✓ obscurePane created (zIndex=650, full opacity)');
 
         // ── Base map ────────────────────────────────────────────────────────────
         const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -189,6 +185,39 @@
 
         } else {
             console.log('ℹ No Obscure layers for this site');
+        }
+
+        // ── Load GeoJSON layers for this site ──────────────────────────────
+        if (GEOJSONS && GEOJSONS.length > 0) {
+            console.log('Loading', GEOJSONS.length, 'GeoJSON layer(s)');
+            GEOJSONS.forEach(function(gj) {
+                const color = gj.color || 'cornflowerblue';
+                const style = {
+                    color: color,
+                    weight: 2,
+                    opacity: 1,
+                    fillColor: color,
+                    fillOpacity: 0.2
+                };
+                fetch(gj.url)
+                    .then(r => r.json())
+                    .then(data => {
+                        L.geoJSON(data, {
+                            style: style,
+                            pointToLayer: function(feature, latlng) {
+                                return L.circleMarker(latlng, {
+                                    radius: 6,
+                                    ...style
+                                });
+                            },
+                            onEachFeature: function(feature, layer) {
+                                if (gj.name) layer.bindTooltip(gj.name, { sticky: true });
+                            }
+                        }).addTo(map);
+                        console.log('✓ GeoJSON added:', gj.name, '(color:', color + ')');
+                    })
+                    .catch(err => console.error('GeoJSON fetch error:', gj.name, err));
+            });
         }
 
     });

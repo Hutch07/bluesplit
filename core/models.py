@@ -72,6 +72,10 @@ class Geojson(models.Model):
     url = models.TextField('URL', unique=True)
     site = models.ForeignKey(Site, on_delete=models.CASCADE, related_name='geojsons')
     level = models.IntegerField('Level', default=1, blank=False)
+    color = models.CharField(
+        'Color', max_length=64, blank=True, default='cornflowerblue',
+        help_text='CSS color name or hex code (e.g. cornflowerblue or #6495ED). Leave blank for default.'
+    )
 
     def __str__(self):
         return self.name

@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 
 from .forms import FlightForm, SiteAccessForm
-from .models import Site, Flight, Obscure  # ← ADDED Obscure import
+from .models import Site, Flight, Geojson, Obscure
 
 
 def is_pilot_or_admin(user):
@@ -160,9 +160,22 @@ def splitmap(request, site_id):
         flight_dict[key] = f.aws_url.rstrip('/') + '/'
         flight_dates.append(f.date.strftime('%Y-%m-%d'))
 
-    # ── GET OBSCURE LAYERS FOR THIS SITE ── (NEW!)
-    obscures = Obscure.objects.filter(site=site).values('id', 'name', 'aws_url')
-    obscures_json = json.dumps(list(obscures))
+    # Geojsons for this site
+    geojsons = list(
+        Geojson.objects.filter(site=site).values('id', 'name', 'url', 'level', 'color')
+    )
+    # Ensure blank color falls back to cornflowerblue
+    for g in geojsons:
+        if not g['color']:
+            g['color'] = 'cornflowerblue'
+    geojsons_json = json.dumps(geojsons)
+
+    # Obscure tile layers for this site
+    try:
+        obscures = list(Obscure.objects.filter(site=site).values('id', 'name', 'aws_url'))
+    except Exception:
+        obscures = []
+    obscures_json = json.dumps(obscures)
 
     context = {
         'site': site,
@@ -175,6 +188,7 @@ def splitmap(request, site_id):
         'flight_dict_json': json.dumps(flight_dict),
         'flight_dates_json': json.dumps(flight_dates),
         'flights': flights_list,
-        'obscures_json': obscures_json,  # ← ADDED this line
+        'geojsons_json': geojsons_json,
+        'obscures_json': obscures_json,
     }
     return render(request, 'core/splitmap.html', context)

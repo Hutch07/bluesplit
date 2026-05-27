@@ -195,14 +195,11 @@
         #sidebar-toggle:hover { background: rgba(255,255,255,0.15); }
 
         /* ══════════════════════════════════════════════════════
-           FIX 1: mix-blend-mode on the obscure pane makes
-           pure black (0,0,0) pixels fully transparent.
-           Both map1 and map2 get their own pane so each
-           pane element gets this class.
+           Obscure pane — tiles already have real alpha
+           transparency from ImageMagick processing.
+           No blend mode needed; non-transparent pixels
+           render at full opacity.
            ══════════════════════════════════════════════════════ */
-        .leaflet-obscure-pane {
-            mix-blend-mode: multiply;
-        }
     </style>
 
     <script>
@@ -212,6 +209,7 @@
         const FLIGHT_DICT   = {{ flight_dict_json|safe }};
         const FLIGHT_DATES  = {{ flight_dates_json|safe }};
         const OBSCURES      = {{ obscures_json|safe }};
+        const GEOJSONS      = {{ geojsons_json|safe }};  // [{id, name, url, level, color}]
         let dateKeyLeft     = "{{ flight_left_key }}";
         let dateKeyRight    = "{{ flight_right_key }}";
     </script>
@@ -363,8 +361,6 @@
         map.createPane('obscurePane');
         map.getPane('obscurePane').style.zIndex = 650;
         map.getPane('obscurePane').style.pointerEvents = 'none';
-        // Apply mix-blend-mode via CSS class for black pixel transparency
-        map.getPane('obscurePane').classList.add('leaflet-obscure-pane');
 
         if (!OBSCURES || OBSCURES.length === 0) return;
 
@@ -452,10 +448,13 @@
             alert('No flight data found for one of the selected dates.');
             return;
         }
-        map1.removeLayer(leftLayer);
-        map2.removeLayer(rightLayer);
-        leftLayer  = L.tileLayer(urlL, TILE_OPTS).addTo(map1);
-        rightLayer = L.tileLayer(urlR, TILE_OPTS).addTo(map2);
+        // Use setUrl() instead of remove/re-add.
+        // Removing the layer and creating a new one makes a NEW object the
+        // layer control doesn't know about — so the checkbox unchecks.
+        // setUrl() updates the SAME layer object in place, keeping the
+        // layer control in sync so the checkbox stays checked.
+        leftLayer.setUrl(urlL);
+        rightLayer.setUrl(urlR);
 
         // ── FIX 2: After updateTiles the new flight layer would normally
         // render above the obscure pane — but because pane zIndex is fixed
