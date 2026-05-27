@@ -4,7 +4,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0006_merge_0004_remove_site_default_style_0005_obscure'),
+        ('core', '0005_obscure'),
     ]
 
     operations = [
