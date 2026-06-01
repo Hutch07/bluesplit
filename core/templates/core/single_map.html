@@ -130,6 +130,16 @@
 
         console.log('✓ geojsonPane(450) and obscurePane(650) created');
 
+        // ── HTML escape helper ───────────────────────────────────────────────────
+        function escapeHtml(str) {
+            return String(str || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
         // ── Base map ────────────────────────────────────────────────────────────
         const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 20,
@@ -197,6 +207,15 @@
                                     ? feature.properties.name
                                     : gj.name;
                                 layer.bindTooltip(label, { sticky: true });
+
+                                if (feature.properties && Object.keys(feature.properties).length > 0) {
+                                    const popupHtml = Object.entries(feature.properties)
+                                        .map(function([key, value]) {
+                                            return '<div><strong>' + escapeHtml(key) + ':</strong> ' + escapeHtml(value === null ? '' : value) + '</div>';
+                                        })
+                                        .join('');
+                                    layer.bindPopup(popupHtml, { maxWidth: 320 });
+                                }
                             }
                         });
                         group.addLayer(gjLayer);
