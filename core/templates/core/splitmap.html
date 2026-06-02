@@ -40,7 +40,7 @@
             backdrop-filter: blur(8px);
             display: flex;
             align-items: center;
-            padding: 0 14px;
+            padding: 0 14px 0 58px;
             gap: 14px;
             z-index: 1100;
             color: white;
@@ -185,14 +185,14 @@
         #label-right { left: 10px; background: rgba(16,185,129,0.85); color: white; }
 
         #sidebar-toggle {
-            position: absolute; top: 10px; left: 10px; z-index: 1060;
-            background: rgba(15,22,36,0.88);
-            border: 1px solid rgba(255,255,255,0.15);
+            position: fixed; top: 4px; left: 10px; z-index: 1200;
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.2);
             color: white; border-radius: 8px; width: 34px; height: 34px;
             display: flex; align-items: center; justify-content: center;
             cursor: pointer; font-size: 1rem; transition: background 0.2s;
         }
-        #sidebar-toggle:hover { background: rgba(255,255,255,0.15); }
+        #sidebar-toggle:hover { background: rgba(255,255,255,0.12); }
 
         /* ══════════════════════════════════════════════════════
            Obscure pane — tiles already have real alpha
@@ -242,8 +242,9 @@
 </head>
 <body>
 
+    <button id="sidebar-toggle" title="Toggle panel"><i class="fa fa-bars"></i></button>
+
     <div id="topbar">
-        <button id="sidebar-toggle" title="Toggle panel"><i class="fa fa-bars"></i></button>
         <span class="site-title">{{ site.name }}</span>
         <span class="sep">|</span>
         <a href="{% url 'dashboard' %}?site={{ site.pk }">← Dashboard</a>
@@ -351,14 +352,14 @@
 
     const TILE_OPTS = {
         tms: true, opacity: 1.0, minZoom: 13,
-        maxNativeZoom: 22, maxZoom: 22,
+        maxNativeZoom: 23, maxZoom: 23,
         keepBuffer: 1, updateWhenIdle: true, updateWhenZooming: false,
     };
 
     // FIX 2: Obscure tile options — note pane is set per-map below
     const OBSCURE_OPTS = {
         tms: true, opacity: 1.0, minZoom: 13,
-        maxNativeZoom: 22, maxZoom: 22,
+        maxNativeZoom: 23, maxZoom: 23,
         crossOrigin: 'anonymous',
         // pane is added individually per map
     };
@@ -426,11 +427,11 @@
 
         map1 = L.map('map1', {
             layers: [osmL], center: center, zoom: 15,
-            preferCanvas: true, maxZoom: 22,
+            preferCanvas: true, maxZoom: 23,
         });
         map2 = L.map('map2', {
             layers: [osmR], center: center, zoom: 15,
-            zoomControl: false, preferCanvas: true, maxZoom: 22,
+            zoomControl: false, preferCanvas: true, maxZoom: 23,
         });
 
         map1.invalidateSize({ animate: false });
