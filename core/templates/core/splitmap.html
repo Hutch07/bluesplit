@@ -200,6 +200,32 @@
            No blend mode needed; non-transparent pixels
            render at full opacity.
            ══════════════════════════════════════════════════════ */
+
+        /* ── Click-coordinate control ── */
+        .coord-control {
+            background: rgba(15,22,36,0.88);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 8px;
+            padding: 7px 12px;
+            color: rgba(255,255,255,0.55);
+            font-size: 0.78rem;
+            font-family: 'SF Mono', 'Fira Mono', monospace;
+            white-space: nowrap;
+            min-width: 230px;
+            text-align: center;
+            pointer-events: none;
+            backdrop-filter: blur(6px);
+            transition: color 0.2s;
+        }
+        .coord-control.has-value { color: white; }
+        .coord-control .coord-label {
+            font-size: 0.68rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.35);
+            display: block;
+            margin-bottom: 2px;
+        }
     </style>
 
     <script>
@@ -325,14 +351,14 @@
 
     const TILE_OPTS = {
         tms: true, opacity: 1.0, minZoom: 13,
-        maxNativeZoom: 21, maxZoom: 22,
+        maxNativeZoom: 22, maxZoom: 22,
         keepBuffer: 1, updateWhenIdle: true, updateWhenZooming: false,
     };
 
     // FIX 2: Obscure tile options — note pane is set per-map below
     const OBSCURE_OPTS = {
         tms: true, opacity: 1.0, minZoom: 13,
-        maxNativeZoom: 21, maxZoom: 22,
+        maxNativeZoom: 22, maxZoom: 22,
         crossOrigin: 'anonymous',
         // pane is added individually per map
     };
@@ -556,6 +582,34 @@
         // GeoJSON layers ARE in the control — checked (visible) by default.
         L.control.layers({ 'OpenStreetMap': osmL }, overlaysL).addTo(map1);
         L.control.layers({ 'OpenStreetMap': osmR }, overlaysR).addTo(map2);
+
+        // ── Click-to-coordinate control (one per map, bottom-left) ──────────
+        function makeCoordControl(position) {
+            return L.Control.extend({
+                options: { position: position },
+                onAdd: function() {
+                    const div = L.DomUtil.create('div', 'coord-control');
+                    div.innerHTML = '<span class="coord-label">Click map for coordinates</span>—';
+                    this._div = div;
+                    return div;
+                },
+                update: function(lat, lng) {
+                    this._div.classList.add('has-value');
+                    this._div.innerHTML =
+                        '<span class="coord-label">Coordinates</span>' +
+                        lat.toFixed(7) + ',&nbsp;' + lng.toFixed(7);
+                }
+            });
+        }
+        const CoordControl1 = makeCoordControl('bottomleft');
+        const coordControl1 = new CoordControl1();
+        coordControl1.addTo(map1);
+        map1.on('click', function(e) { coordControl1.update(e.latlng.lat, e.latlng.lng); });
+
+        const CoordControl2 = makeCoordControl('bottomleft');
+        const coordControl2 = new CoordControl2();
+        coordControl2.addTo(map2);
+        map2.on('click', function(e) { coordControl2.update(e.latlng.lat, e.latlng.lng); });
 
         // ── Add obscure layers AFTER layer controls ────────────────────────
         // Must be last so obscurePane(650) renders above geojsonPane(450).
