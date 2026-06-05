@@ -143,47 +143,22 @@ def splitmap(request, site_id):
     # Get all flights for this site sorted chronologically
     flights = Flight.objects.filter(site=site).order_by('date')
 
-    # Helpers
+    # If site default style is single, show a single-map view using the most
+    # recent flight. Otherwise continue to the split map flow below.
     def date_to_key(d):
+        # Converts date to folder key format: 2026_0422
         return d.strftime('%Y_%m%d')
 
     def tile_url(aws_url):
+        # aws_url already contains the full base path, append tile suffix
         base = aws_url.rstrip('/')
         return base + '/{z}/{x}/{y}.png'
 
-    flights_list = list(flights)
-    flight_count = len(flights_list)
-
-    if flight_count == 0:
-        messages.error(request, 'This site has no flights.')
+    if flights.count() < 2:
+        messages.error(request, 'This site needs at least 2 flights to use the split map.')
         return redirect(f'/dashboard/?site={site_id}')
 
-    # If there's only one flight, render the single-map view using the most
-    # recent (and only) flight.
-    if flight_count == 1:
-        flight = flights_list[-1]
-        # Geojsons for this site
-        geojsons = list(
-            Geojson.objects.filter(site=site).values('id', 'name', 'url', 'level', 'color')
-        )
-        for g in geojsons:
-            if not g['color']:
-                g['color'] = 'cornflowerblue'
-        obscures = list(Obscure.objects.filter(site=site).values('id', 'name', 'aws_url'))
-
-        context = {
-            'site': site,
-            'flight': flight,
-            'flight_key': date_to_key(flight.date),
-            'flight_url': tile_url(flight.aws_url),
-            'flight_dict_json': json.dumps({date_to_key(flight.date): flight.aws_url.rstrip('/') + '/'}),
-            'flight_dates_json': json.dumps([flight.date.strftime('%Y-%m-%d')]),
-            'geojsons_json': json.dumps(geojsons),
-            'obscures_json': json.dumps(obscures),
-        }
-        return render(request, 'core/singlemap.html', context)
-
-    # Two or more flights -> split map
+    flights_list = list(flights)
     flight_right = flights_list[-1]   # most recent
     flight_left  = flights_list[-2]   # second most recent
 
