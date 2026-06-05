@@ -11,6 +11,12 @@
         }
         .login-card h1 {
             font-size: 1.6rem;
+            margin-bottom: 0.5rem;
+        }
+        .login-card h2 {
+            font-size: 1.15rem;
+            margin: 1.4rem 0 0.75rem;
+            color: #1b2430;
         }
         .signed-in {
             font-size: 0.88rem;
@@ -169,7 +175,7 @@
 <body>
     <div class="login-page">
         <div class="login-card">
-            <h1>Manage Site Access</h1>
+            <h1>Manage Site</h1>
             <p class="signed-in">Signed in as {{ request.user.username }} &nbsp;·&nbsp;
                 <form method="post" action="{% url 'logout' %}" style="display:inline">{% csrf_token %}<button type="submit" style="background:none;border:none;color:var(--accent);font-size:inherit;cursor:pointer;padding:0;font-family:inherit;">Logout</button></form>
             </p>
@@ -182,8 +188,19 @@
                 </ul>
             {% endif %}
 
+            <h2>Manage Access</h2>
+            <form method="post" novalidate>
+                {% csrf_token %}
+                <div class="field">
+                    <label for="{{ form.site.id_for_label }}">Select Site</label>
+                    {{ form.site }}
+                </div>
+                <button type="submit" name="load_site" class="secondary">Load Site</button>
+            </form>
+
+            <hr class="divider">
+
             {% if is_admin %}
-                <hr class="divider">
                 <h2>Add a New Site</h2>
                 <form method="post" novalidate>
                     {% csrf_token %}
@@ -207,17 +224,6 @@
                     </div>
                 </form>
             {% endif %}
-
-            <hr class="divider">
-            <!-- Step 1: Select a site -->
-            <form method="post" novalidate>
-                {% csrf_token %}
-                <div class="field">
-                    <label for="{{ form.site.id_for_label }}">Select Site</label>
-                    {{ form.site }}
-                </div>
-                <button type="submit" name="load_site" class="secondary">Load Site</button>
-            </form>
 
             {% if selected_site %}
                 <hr class="divider">
