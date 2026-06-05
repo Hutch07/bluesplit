@@ -1,0 +1,69 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>{{ site.name }} — Map | BlueSplit</title>
+    <link rel="stylesheet" href="{% static 'core/css/login.css' %}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-sA+e2Gk6v0y+v6gk9Y6M0qQFfQYV6k9e2Gk6v+0E4vM=" crossorigin=""/>
+    <style>
+        body { font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1b2430; }
+        .card { max-width: 960px; margin: 28px auto; background: white; padding: 18px; border-radius: 12px; }
+        #map { height: 520px; border: 1px solid rgba(15,22,36,0.06); border-radius: 8px; }
+        .meta { margin: 12px 0; color:#444 }
+        a.btn { display:inline-block; padding:10px 14px; background:#0f6ecb;color:white;border-radius:8px;text-decoration:none }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>{{ site.name }} — Single Map</h1>
+        <p class="meta">Flight date: {{ flight.date }} — Tile key: {{ flight_key }}</p>
+
+        <div id="map"></div>
+
+        <div style="margin-top:12px; display:flex; gap:8px; align-items:center">
+            <a class="btn" href="{% url 'splitmap' site.pk %}">Open Split Map</a>
+            <a href="{% url 'dashboard' %}" style="color:#0f6ecb; text-decoration:none">Back to Dashboard</a>
+        </div>
+    </div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-o9N1j8k0yq0bK6m0Y6M0qQFfQYV6k9e2Gk6v+0E4vM=" crossorigin=""></script>
+    <script>
+        // Initialize map
+        const map = L.map('map').setView([{{ site.latitude }}, {{ site.longitude }}], 16);
+
+        // Base tile layer (flight tiles)
+        L.tileLayer('{{ flight_url }}', {
+            maxZoom: 22,
+            attribution: ''
+        }).addTo(map);
+
+        // Center marker
+        L.marker([{{ site.latitude }}, {{ site.longitude }}]).addTo(map).bindPopup('{{ site.name }}');
+
+        // Load geojson overlays if provided
+        try {
+            const geojsons = {{ geojsons_json|default:'[]'|safe }};
+            geojsons.forEach(g => {
+                if (!g.url) return;
+                fetch(g.url).then(r => r.json()).then(data => {
+                    L.geoJSON(data, { style: { color: g.color || 'cornflowerblue' } }).addTo(map);
+                }).catch(err => console.warn('Failed to load geojson', g.url, err));
+            });
+        } catch (e) {
+            console.warn('No geojsons available');
+        }
+
+        // Add obscure tile layers (COG) as semi-transparent overlays
+        try {
+            const obscures = {{ obscures_json|default:'[]'|safe }};
+            obscures.forEach(o => {
+                if (!o.aws_url) return;
+                const url = o.aws_url.replace(/\/+$/, '') + '/{z}/{x}/{y}.png';
+                L.tileLayer(url, { opacity: 0.5 }).addTo(map);
+            });
+        } catch (e) {
+            console.warn('No obscure layers');
+        }
+    </script>
+</body>
+</html>
