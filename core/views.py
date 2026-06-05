@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 
-from .forms import FlightForm, SiteAccessForm
+from .forms import FlightForm, SiteAccessForm, SiteCreateForm
 from .models import Site, Flight, Geojson, Obscure
 
 
@@ -83,6 +83,8 @@ def site_access(request):
 
     selected_site = None
     form = SiteAccessForm()
+    is_admin_user = is_admin(request.user)
+    add_site_form = SiteCreateForm() if is_admin_user else None
 
     site_id = request.POST.get('site') or request.GET.get('site')
     if site_id:
@@ -92,7 +94,13 @@ def site_access(request):
             selected_site = None
 
     if request.method == 'POST':
-        if 'load_site' in request.POST:
+        if 'add_site' in request.POST and is_admin_user:
+            add_site_form = SiteCreateForm(request.POST)
+            if add_site_form.is_valid():
+                site = add_site_form.save()
+                messages.success(request, f'Site {site.name} created successfully.')
+                return redirect(f"{request.path}?site={site.pk}")
+        elif 'load_site' in request.POST:
             if selected_site:
                 form = SiteAccessForm(initial={
                     'site': selected_site,
@@ -117,6 +125,8 @@ def site_access(request):
     return render(request, 'core/site_access.html', {
         'form': form,
         'selected_site': selected_site,
+        'is_admin': is_admin_user,
+        'add_site_form': add_site_form,
     })
 
 

@@ -18,6 +18,22 @@ class FlightForm(forms.ModelForm):
         }
 
 
+class SiteCreateForm(forms.ModelForm):
+    class Meta:
+        model = Site
+        fields = ['name', 'longitude', 'latitude']
+        widgets = {
+            'name': forms.TextInput(attrs={'placeholder': 'Site name'}),
+            'longitude': forms.NumberInput(attrs={'step': 'any', 'placeholder': 'Longitude'}),
+            'latitude': forms.NumberInput(attrs={'step': 'any', 'placeholder': 'Latitude'}),
+        }
+        labels = {
+            'name': 'Site Name',
+            'longitude': 'Longitude',
+            'latitude': 'Latitude',
+        }
+
+
 class SiteAccessForm(forms.Form):
     site = forms.ModelChoiceField(
         queryset=Site.objects.all(),
