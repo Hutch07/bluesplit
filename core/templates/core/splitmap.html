@@ -145,6 +145,13 @@
             transition: background 0.2s, transform 0.15s;
         }
         .btn-toggle:hover { background: rgba(16, 185, 129, 1); transform: translateY(-1px); }
+        .btn-toggle:disabled,
+        .btn-toggle[disabled] {
+            background: rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.3);
+            cursor: not-allowed;
+            transform: none;
+        }
 
         .flight-list { list-style: none; margin: 0; padding: 0 0 16px; }
         .flight-list li {
@@ -229,15 +236,16 @@
     </style>
 
     <script>
-        const SITE_LAT      = {{ site.latitude }};
-        const SITE_LNG      = {{ site.longitude }};
-        const SITE_NAME     = "{{ site.name|escapejs }}";
-        const FLIGHT_DICT   = {{ flight_dict_json|safe }};
-        const FLIGHT_DATES  = {{ flight_dates_json|safe }};
-        const OBSCURES      = {{ obscures_json|safe }};
-        const GEOJSONS      = {{ geojsons_json|safe }};  // [{id, name, url, level, color}]
-        let dateKeyLeft     = "{{ flight_left_key }}";
-        let dateKeyRight    = "{{ flight_right_key }}";
+        const SITE_LAT          = {{ site.latitude }};
+        const SITE_LNG          = {{ site.longitude }};
+        const SITE_NAME         = "{{ site.name|escapejs }}";
+        const FLIGHT_DICT       = {{ flight_dict_json|safe }};
+        const FLIGHT_DATES      = {{ flight_dates_json|safe }};
+        const OBSCURES          = {{ obscures_json|safe }};
+        const GEOJSONS          = {{ geojsons_json|safe }};  // [{id, name, url, level, color}]
+        const SINGLE_FLIGHT_MODE = {{ single_flight_mode|yesno:"true,false" }};
+        let dateKeyLeft         = "{{ flight_left_key }}";
+        let dateKeyRight        = "{{ flight_right_key }}";
     </script>
 </head>
 <body>
@@ -262,32 +270,38 @@
                 <h3>Active Dates</h3>
                 <div class="date-label-row">
                     <div class="date-badge left-badge">
-                        <small>Left</small>
+                        <small>{% if single_flight_mode %}Date{% else %}Left{% endif %}</small>
                         <span id="active-left">{{ flight_left.date }}</span>
                     </div>
+                    {% if not single_flight_mode %}
                     <div class="date-badge right-badge">
                         <small>Right</small>
                         <span id="active-right">{{ flight_right.date }}</span>
                     </div>
+                    {% endif %}
                 </div>
             </div>
 
             <div class="sidebar-section">
                 <h3>Change Dates</h3>
                 <div class="picker-row">
-                    <label>Left map date</label>
+                    <label>{% if single_flight_mode %}Map date{% else %}Left map date{% endif %}</label>
                     <input type="text" id="datepicker-left" autocomplete="off" placeholder="Pick a date">
                 </div>
+                {% if not single_flight_mode %}
                 <div class="picker-row">
                     <label>Right map date</label>
                     <input type="text" id="datepicker-right" autocomplete="off" placeholder="Pick a date">
                 </div>
+                {% endif %}
                 <button class="btn-load" onclick="updateTiles()">
                     <i class="fa fa-plane"></i> Load Imagery
                 </button>
+                {% if not single_flight_mode %}
                 <button class="btn-toggle" onclick="toggleMapMode()">
                     <i class="fa fa-arrows-alt-h"></i> View Single Map
                 </button>
+                {% endif %}
             </div>
 
             <div class="sdivider"></div>
@@ -378,6 +392,18 @@
                 return;
             }
             initMaps();
+
+            // ── Single-flight mode: start in single-map view ────────────────
+            // If the site only has one flight both maps show the same imagery,
+            // so we immediately collapse map2 and lock the toggle button.
+            if (SINGLE_FLIGHT_MODE) {
+                toggleMapMode();  // hide map2, expand map1
+                const toggleBtn = document.querySelector('.btn-toggle');
+                if (toggleBtn) {
+                    toggleBtn.disabled = true;
+                    toggleBtn.title = 'Only one flight available for this site';
+                }
+            }
         });
     });
 

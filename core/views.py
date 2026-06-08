@@ -154,13 +154,15 @@ def splitmap(request, site_id):
         base = aws_url.rstrip('/')
         return base + '/{z}/{x}/{y}.png'
 
-    if flights.count() < 2:
-        messages.error(request, 'This site needs at least 2 flights to use the split map.')
+    flights_list = list(flights)
+    if not flights_list:
+        messages.error(request, 'This site has no flights yet.')
         return redirect(f'/dashboard/?site={site_id}')
 
-    flights_list = list(flights)
+    single_flight_mode = len(flights_list) < 2
+
     flight_right = flights_list[-1]   # most recent
-    flight_left  = flights_list[-2]   # second most recent
+    flight_left  = flights_list[-2] if len(flights_list) >= 2 else flights_list[-1]  # second most recent, or same
 
     # Build flight dict for datepicker: { "2026_0422": "https://.../" }
     flight_dict = {}
@@ -189,6 +191,7 @@ def splitmap(request, site_id):
 
     context = {
         'site': site,
+        'single_flight_mode': single_flight_mode,
         'flight_left': flight_left,
         'flight_right': flight_right,
         'flight_left_key': date_to_key(flight_left.date),
