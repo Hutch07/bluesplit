@@ -233,6 +233,19 @@
             display: block;
             margin-bottom: 2px;
         }
+        .zoom-control {
+            background: rgba(15,22,36,0.88);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 8px;
+            padding: 7px 12px;
+            color: rgba(255,255,255,0.75);
+            font-size: 0.78rem;
+            font-family: 'SF Mono', 'Fira Mono', monospace;
+            pointer-events: none;
+            backdrop-filter: blur(6px);
+            min-width: 92px;
+            text-align: center;
+        }
     </style>
 
     <script>
@@ -366,14 +379,14 @@
 
     const TILE_OPTS = {
         tms: true, opacity: 1.0, minZoom: 13,
-        maxNativeZoom: 23, maxZoom: 23,
+        maxNativeZoom: 19, maxZoom: 25,
         keepBuffer: 1, updateWhenIdle: true, updateWhenZooming: false,
     };
 
     // FIX 2: Obscure tile options — note pane is set per-map below
     const OBSCURE_OPTS = {
         tms: true, opacity: 1.0, minZoom: 13,
-        maxNativeZoom: 23, maxZoom: 23,
+        maxNativeZoom: 19, maxZoom: 25,
         crossOrigin: 'anonymous',
         // pane is added individually per map
     };
@@ -444,22 +457,34 @@
     }
 
     function initMaps() {
-        const osmL = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxNativeZoom: 23, maxZoom: 23,
+        const baseLayerOpts = {
+            maxNativeZoom: 19,
+            maxZoom: 25,
             attribution: '© <a href="https://osm.org/copyright">OpenStreetMap</a>'
-        });
-        const osmR = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxNativeZoom: 23, maxZoom: 23,
-            attribution: '© <a href="https://osm.org/copyright">OpenStreetMap</a>'
-        });
+        };
+        const osmL = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', baseLayerOpts);
+        const osmR = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', baseLayerOpts);
+        const azureOpts = {
+            maxNativeZoom: 19,
+            maxZoom: 25,
+            attribution: '© Microsoft Azure Maps'
+        };
+        const azureL = L.tileLayer(
+            'https://atlas.microsoft.com/map/tile?api-version=2024-04-01&tilesetId=microsoft.base.road&zoom={z}&x={x}&y={y}&subscription-key=<YourKey>',
+            azureOpts
+        );
+        const azureR = L.tileLayer(
+            'https://atlas.microsoft.com/map/tile?api-version=2024-04-01&tilesetId=microsoft.base.road&zoom={z}&x={x}&y={y}&subscription-key=<YourKey>',
+            azureOpts
+        );
 
         map1 = L.map('map1', {
             layers: [osmL], center: center, zoom: 15,
-            preferCanvas: true, maxZoom: 23,
+            preferCanvas: true, maxZoom: 25,
         });
         map2 = L.map('map2', {
             layers: [osmR], center: center, zoom: 15,
-            zoomControl: false, preferCanvas: true, maxZoom: 23,
+            zoomControl: false, preferCanvas: true, maxZoom: 25,
         });
 
         map1.invalidateSize({ animate: false });
@@ -609,8 +634,8 @@
         // ── Add layer controls ─────────────────────────────────────────────
         // Obscure layers are NOT in the control — they cannot be toggled.
         // GeoJSON layers ARE in the control — checked (visible) by default.
-        L.control.layers({ 'OpenStreetMap': osmL }, overlaysL).addTo(map1);
-        L.control.layers({ 'OpenStreetMap': osmR }, overlaysR).addTo(map2);
+        L.control.layers({ 'OpenStreetMap': osmL, 'Azure Maps': azureL }, overlaysL).addTo(map1);
+        L.control.layers({ 'OpenStreetMap': osmR, 'Azure Maps': azureR }, overlaysR).addTo(map2);
 
         // ── Click-to-coordinate control (one per map, bottom-left) ──────────
         function makeCoordControl(position) {
@@ -647,6 +672,34 @@
             addObscureLayers(map1);
             addObscureLayers(map2);
         }
+
+        function makeZoomControl(position, initialZoom) {
+            return L.Control.extend({
+                options: { position: position },
+                onAdd: function() {
+                    const div = L.DomUtil.create('div', 'zoom-control');
+                    div.innerHTML = '<span class="coord-label">Zoom level</span><strong id="zoom-text">' + initialZoom + '</strong>';
+                    this._div = div;
+                    return div;
+                },
+                update: function(value) {
+                    if (this._div) {
+                        const text = this._div.querySelector('#zoom-text');
+                        if (text) text.textContent = value;
+                    }
+                }
+            });
+        }
+
+        const ZoomControl1 = makeZoomControl('bottomright', map1.getZoom());
+        const zoomControl1 = new ZoomControl1();
+        zoomControl1.addTo(map1);
+        map1.on('zoomend', function() { zoomControl1.update(map1.getZoom()); });
+
+        const ZoomControl2 = makeZoomControl('bottomright', map2.getZoom());
+        const zoomControl2 = new ZoomControl2();
+        zoomControl2.addTo(map2);
+        map2.on('zoomend', function() { zoomControl2.update(map2.getZoom()); });
 
         $('#datepicker-left').datepicker({
             changeMonth: true, changeYear: true,
