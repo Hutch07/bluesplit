@@ -13,8 +13,8 @@
     <!-- Leaflet.Sync (synchronized pan/zoom) -->
     <script src="https://cdn.jsdelivr.net/npm/leaflet.sync@0.2.4/L.Map.Sync.js"></script>
 
-    <!-- Azure Maps Leaflet plugin (provides L.microsoft.tileLayer) -->
-    <script src="https://atlas.microsoft.com/sdk/javascript/mapcontrol/3/atlas-leaflet.min.js"></script>
+    <!-- Azure Maps Leaflet plugin (provides L.tileLayer.azureMaps / L.TileLayer.AzureMaps) -->
+    <script src="https://unpkg.com/azure-maps-leaflet/dist/azure-maps-leaflet.min.js"></script>
 
     <!-- jQuery + jQuery UI (datepicker) -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
@@ -482,46 +482,43 @@
         map2.invalidateSize({ animate: false });
 
         // ── Azure Maps layers (wrapped in try/catch — OSM still works if
-        //    the plugin script fails to load from atlas.microsoft.com) ────────
-        // Hybrid works by keeping satellite + overlay as separate tracked layers
-        // and swapping them in/out on baselayerchange rather than using
-        // L.layerGroup (which Leaflet's radio-button control doesn't support
-        // cleanly as an exclusive basemap).
+        //    the plugin script fails to load) ──────────────────────────────────
+        // Uses the official azure-maps-leaflet plugin (L.TileLayer.AzureMaps).
+        // Hybrid works by keeping satellite + road-overlay as separate tracked
+        // layers and swapping the overlay in/out on baselayerchange, since
+        // Leaflet's radio-button control doesn't support L.layerGroup as a
+        // cleanly exclusive basemap.
         let basemapsL = { 'OpenStreetMap': osmL };
         let basemapsR = { 'OpenStreetMap': osmR };
 
         try {
-            if (typeof L.microsoft === 'undefined' || typeof L.microsoft.tileLayer !== 'function') {
-                throw new Error('Azure Maps Leaflet plugin not loaded');
+            if (typeof L.TileLayer === 'undefined' || typeof L.TileLayer.AzureMaps !== 'function') {
+                throw new Error('azure-maps-leaflet plugin not loaded');
             }
 
-            const azureAuth    = { authType: 'subscriptionKey', subscriptionKey: AZURE_MAPS_KEY };
-            const azureOpts    = { maxNativeZoom: 19, maxZoom: 25 };
+            const azureAuth = { authType: 'subscriptionKey', subscriptionKey: AZURE_MAPS_KEY };
+            const azureOpts = { maxNativeZoom: 19, maxZoom: 25 };
 
             // Road basemap
-            const azureRoadL   = L.microsoft.tileLayer({ tileset: 'microsoft.base.road',    authOptions: azureAuth, ...azureOpts });
-            const azureRoadR   = L.microsoft.tileLayer({ tileset: 'microsoft.base.road',    authOptions: azureAuth, ...azureOpts });
+            const azureRoadL = new L.TileLayer.AzureMaps({ authOptions: azureAuth, tilesetId: 'microsoft.base.road',    ...azureOpts });
+            const azureRoadR = new L.TileLayer.AzureMaps({ authOptions: azureAuth, tilesetId: 'microsoft.base.road',    ...azureOpts });
 
-            // Hybrid: satellite imagery layer
-            const azureSatL    = L.microsoft.tileLayer({ tileset: 'microsoft.imagery',      authOptions: azureAuth, ...azureOpts });
-            const azureSatR    = L.microsoft.tileLayer({ tileset: 'microsoft.imagery',      authOptions: azureAuth, ...azureOpts });
+            // Hybrid: satellite base layer (shown in layer control as "Azure Hybrid")
+            const azureSatL  = new L.TileLayer.AzureMaps({ authOptions: azureAuth, tilesetId: 'microsoft.imagery',      ...azureOpts });
+            const azureSatR  = new L.TileLayer.AzureMaps({ authOptions: azureAuth, tilesetId: 'microsoft.imagery',      ...azureOpts });
 
-            // Hybrid: transparent road+label overlay (sits above satellite)
-            // Stored on the map objects so baselayerchange can show/hide it
-            map1._azureHybridOverlay = L.microsoft.tileLayer({ tileset: 'microsoft.base.hybrid.road', authOptions: azureAuth, ...azureOpts });
-            map2._azureHybridOverlay = L.microsoft.tileLayer({ tileset: 'microsoft.base.hybrid.road', authOptions: azureAuth, ...azureOpts });
+            // Hybrid: transparent road+label overlay added on top when satellite is active
+            map1._azureHybridOverlay = new L.TileLayer.AzureMaps({ authOptions: azureAuth, tilesetId: 'microsoft.base.hybrid.road', ...azureOpts });
+            map2._azureHybridOverlay = new L.TileLayer.AzureMaps({ authOptions: azureAuth, tilesetId: 'microsoft.base.hybrid.road', ...azureOpts });
 
-            // When the user selects a basemap, show the hybrid overlay only
-            // when the satellite layer is active — remove it otherwise
+            // Add/remove the hybrid road overlay whenever the basemap radio changes
             function handleBaselayerChange(map, satLayer) {
                 return function(e) {
                     const overlay = map._azureHybridOverlay;
                     if (!overlay) return;
                     if (e.layer === satLayer) {
-                        // Satellite selected → add hybrid overlay on top
                         if (!map.hasLayer(overlay)) overlay.addTo(map);
                     } else {
-                        // Any other basemap → remove hybrid overlay
                         if (map.hasLayer(overlay)) map.removeLayer(overlay);
                     }
                 };
@@ -532,7 +529,7 @@
             basemapsL = { 'OpenStreetMap': osmL, 'Azure Road': azureRoadL, 'Azure Hybrid': azureSatL };
             basemapsR = { 'OpenStreetMap': osmR, 'Azure Road': azureRoadR, 'Azure Hybrid': azureSatR };
 
-            console.log('✓ Azure Maps layers created');
+            console.log('✓ Azure Maps layers created (azure-maps-leaflet plugin)');
         } catch (err) {
             console.warn('Azure Maps unavailable, falling back to OSM only:', err.message);
         }
