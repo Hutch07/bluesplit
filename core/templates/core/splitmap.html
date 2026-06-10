@@ -466,27 +466,9 @@
         };
         const osmL = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', baseLayerOpts);
         const osmR = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', baseLayerOpts);
-        // ── Azure Maps authentication config (subscriptionKey mode) ──────────
-        const azureAuth = {
-            authType: 'subscriptionKey',
-            subscriptionKey: AZURE_MAPS_KEY
-        };
-        const azureTileOpts = { maxNativeZoom: 19, maxZoom: 25 };
 
-        // Road basemap (azure road labels + boundaries)
-        const azureRoadL = L.microsoft.tileLayer({ tileset: 'microsoft.base.road',   authOptions: azureAuth, ...azureTileOpts });
-        const azureRoadR = L.microsoft.tileLayer({ tileset: 'microsoft.base.road',   authOptions: azureAuth, ...azureTileOpts });
-
-        // Hybrid basemap = satellite imagery + transparent road/label overlay
-        const azureSatL     = L.microsoft.tileLayer({ tileset: 'microsoft.imagery',            authOptions: azureAuth, ...azureTileOpts });
-        const azureSatR     = L.microsoft.tileLayer({ tileset: 'microsoft.imagery',            authOptions: azureAuth, ...azureTileOpts });
-        const azureHybridOvL = L.microsoft.tileLayer({ tileset: 'microsoft.base.hybrid.road', authOptions: azureAuth, ...azureTileOpts });
-        const azureHybridOvR = L.microsoft.tileLayer({ tileset: 'microsoft.base.hybrid.road', authOptions: azureAuth, ...azureTileOpts });
-
-        // Layer groups let both tiles act as a single selectable basemap
-        const azureHybridL = L.layerGroup([azureSatL,  azureHybridOvL]);
-        const azureHybridR = L.layerGroup([azureSatR,  azureHybridOvR]);
-
+        // ── Maps must be created BEFORE Azure layers so map1/map2 are always
+        //    assigned even if the Azure plugin fails to load ──────────────────
         map1 = L.map('map1', {
             layers: [osmL], center: center, zoom: 15,
             preferCanvas: true, maxZoom: 25,
@@ -498,6 +480,62 @@
 
         map1.invalidateSize({ animate: false });
         map2.invalidateSize({ animate: false });
+
+        // ── Azure Maps layers (wrapped in try/catch — OSM still works if
+        //    the plugin script fails to load from atlas.microsoft.com) ────────
+        // Hybrid works by keeping satellite + overlay as separate tracked layers
+        // and swapping them in/out on baselayerchange rather than using
+        // L.layerGroup (which Leaflet's radio-button control doesn't support
+        // cleanly as an exclusive basemap).
+        let basemapsL = { 'OpenStreetMap': osmL };
+        let basemapsR = { 'OpenStreetMap': osmR };
+
+        try {
+            if (typeof L.microsoft === 'undefined' || typeof L.microsoft.tileLayer !== 'function') {
+                throw new Error('Azure Maps Leaflet plugin not loaded');
+            }
+
+            const azureAuth    = { authType: 'subscriptionKey', subscriptionKey: AZURE_MAPS_KEY };
+            const azureOpts    = { maxNativeZoom: 19, maxZoom: 25 };
+
+            // Road basemap
+            const azureRoadL   = L.microsoft.tileLayer({ tileset: 'microsoft.base.road',    authOptions: azureAuth, ...azureOpts });
+            const azureRoadR   = L.microsoft.tileLayer({ tileset: 'microsoft.base.road',    authOptions: azureAuth, ...azureOpts });
+
+            // Hybrid: satellite imagery layer
+            const azureSatL    = L.microsoft.tileLayer({ tileset: 'microsoft.imagery',      authOptions: azureAuth, ...azureOpts });
+            const azureSatR    = L.microsoft.tileLayer({ tileset: 'microsoft.imagery',      authOptions: azureAuth, ...azureOpts });
+
+            // Hybrid: transparent road+label overlay (sits above satellite)
+            // Stored on the map objects so baselayerchange can show/hide it
+            map1._azureHybridOverlay = L.microsoft.tileLayer({ tileset: 'microsoft.base.hybrid.road', authOptions: azureAuth, ...azureOpts });
+            map2._azureHybridOverlay = L.microsoft.tileLayer({ tileset: 'microsoft.base.hybrid.road', authOptions: azureAuth, ...azureOpts });
+
+            // When the user selects a basemap, show the hybrid overlay only
+            // when the satellite layer is active — remove it otherwise
+            function handleBaselayerChange(map, satLayer) {
+                return function(e) {
+                    const overlay = map._azureHybridOverlay;
+                    if (!overlay) return;
+                    if (e.layer === satLayer) {
+                        // Satellite selected → add hybrid overlay on top
+                        if (!map.hasLayer(overlay)) overlay.addTo(map);
+                    } else {
+                        // Any other basemap → remove hybrid overlay
+                        if (map.hasLayer(overlay)) map.removeLayer(overlay);
+                    }
+                };
+            }
+            map1.on('baselayerchange', handleBaselayerChange(map1, azureSatL));
+            map2.on('baselayerchange', handleBaselayerChange(map2, azureSatR));
+
+            basemapsL = { 'OpenStreetMap': osmL, 'Azure Road': azureRoadL, 'Azure Hybrid': azureSatL };
+            basemapsR = { 'OpenStreetMap': osmR, 'Azure Road': azureRoadR, 'Azure Hybrid': azureSatR };
+
+            console.log('✓ Azure Maps layers created');
+        } catch (err) {
+            console.warn('Azure Maps unavailable, falling back to OSM only:', err.message);
+        }
 
         map1.sync(map2);
         map2.sync(map1);
@@ -643,14 +681,8 @@
         // ── Add layer controls ─────────────────────────────────────────────
         // Obscure layers are NOT in the control — they cannot be toggled.
         // GeoJSON layers ARE in the control — checked (visible) by default.
-        L.control.layers(
-            { 'OpenStreetMap': osmL, 'Azure Road': azureRoadL, 'Azure Hybrid': azureHybridL },
-            overlaysL
-        ).addTo(map1);
-        L.control.layers(
-            { 'OpenStreetMap': osmR, 'Azure Road': azureRoadR, 'Azure Hybrid': azureHybridR },
-            overlaysR
-        ).addTo(map2);
+        L.control.layers(basemapsL, overlaysL).addTo(map1);
+        L.control.layers(basemapsR, overlaysR).addTo(map2);
 
         // ── Click-to-coordinate control (one per map, bottom-left) ──────────
         function makeCoordControl(position) {
