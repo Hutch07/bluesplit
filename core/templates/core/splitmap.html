@@ -256,9 +256,10 @@
         const FLIGHT_DATES      = {{ flight_dates_json|safe }};
         const OBSCURES          = {{ obscures_json|safe }};
         const GEOJSONS          = {{ geojsons_json|safe }};  // [{id, name, url, level, color}]
-        const SINGLE_FLIGHT_MODE = {{ single_flight_mode|yesno:"true,false" }};
-        let dateKeyLeft         = "{{ flight_left_key }}";
-        let dateKeyRight        = "{{ flight_right_key }}";
+        const SINGLE_FLIGHT_MODE  = {{ single_flight_mode|yesno:"true,false" }};
+        const AZURE_MAPS_KEY      = "{{ azure_maps_key|escapejs }}";
+        let dateKeyLeft           = "{{ flight_left_key }}";
+        let dateKeyRight          = "{{ flight_right_key }}";
     </script>
 </head>
 <body>
@@ -467,14 +468,11 @@
             maxZoom: 25,
             attribution: '© Microsoft Azure Maps'
         };
-        const azureL = L.tileLayer(
-            'https://atlas.microsoft.com/map/tile?api-version=2024-04-01&tilesetId=microsoft.base.road&zoom={z}&x={x}&y={y}&subscription-key=<YourKey>',
-            azureOpts
-        );
-        const azureR = L.tileLayer(
-            'https://atlas.microsoft.com/map/tile?api-version=2024-04-01&tilesetId=microsoft.base.road&zoom={z}&x={x}&y={y}&subscription-key=<YourKey>',
-            azureOpts
-        );
+        const azureTileUrl = 'https://atlas.microsoft.com/map/tile?api-version=2024-04-01'
+            + '&tilesetId=microsoft.base.road&zoom={z}&x={x}&y={y}'
+            + '&subscription-key=' + encodeURIComponent(AZURE_MAPS_KEY);
+        const azureL = L.tileLayer(azureTileUrl, azureOpts);
+        const azureR = L.tileLayer(azureTileUrl, azureOpts);
 
         map1 = L.map('map1', {
             layers: [osmL], center: center, zoom: 15,
