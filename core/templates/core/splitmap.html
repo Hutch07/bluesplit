@@ -13,6 +13,9 @@
     <!-- Leaflet.Sync (synchronized pan/zoom) -->
     <script src="https://cdn.jsdelivr.net/npm/leaflet.sync@0.2.4/L.Map.Sync.js"></script>
 
+    <!-- Azure Maps Leaflet plugin (provides L.microsoft.tileLayer) -->
+    <script src="https://atlas.microsoft.com/sdk/javascript/mapcontrol/3/atlas-leaflet.min.js"></script>
+
     <!-- jQuery + jQuery UI (datepicker) -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
@@ -463,16 +466,26 @@
         };
         const osmL = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', baseLayerOpts);
         const osmR = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', baseLayerOpts);
-        const azureOpts = {
-            maxNativeZoom: 19,
-            maxZoom: 25,
-            attribution: '© Microsoft Azure Maps'
+        // ── Azure Maps authentication config (subscriptionKey mode) ──────────
+        const azureAuth = {
+            authType: 'subscriptionKey',
+            subscriptionKey: AZURE_MAPS_KEY
         };
-        const azureTileUrl = 'https://atlas.microsoft.com/map/tile?api-version=2024-04-01'
-            + '&tilesetId=microsoft.base.road&zoom={z}&x={x}&y={y}'
-            + '&subscription-key=' + encodeURIComponent(AZURE_MAPS_KEY);
-        const azureL = L.tileLayer(azureTileUrl, azureOpts);
-        const azureR = L.tileLayer(azureTileUrl, azureOpts);
+        const azureTileOpts = { maxNativeZoom: 19, maxZoom: 25 };
+
+        // Road basemap (azure road labels + boundaries)
+        const azureRoadL = L.microsoft.tileLayer({ tileset: 'microsoft.base.road',   authOptions: azureAuth, ...azureTileOpts });
+        const azureRoadR = L.microsoft.tileLayer({ tileset: 'microsoft.base.road',   authOptions: azureAuth, ...azureTileOpts });
+
+        // Hybrid basemap = satellite imagery + transparent road/label overlay
+        const azureSatL     = L.microsoft.tileLayer({ tileset: 'microsoft.imagery',            authOptions: azureAuth, ...azureTileOpts });
+        const azureSatR     = L.microsoft.tileLayer({ tileset: 'microsoft.imagery',            authOptions: azureAuth, ...azureTileOpts });
+        const azureHybridOvL = L.microsoft.tileLayer({ tileset: 'microsoft.base.hybrid.road', authOptions: azureAuth, ...azureTileOpts });
+        const azureHybridOvR = L.microsoft.tileLayer({ tileset: 'microsoft.base.hybrid.road', authOptions: azureAuth, ...azureTileOpts });
+
+        // Layer groups let both tiles act as a single selectable basemap
+        const azureHybridL = L.layerGroup([azureSatL,  azureHybridOvL]);
+        const azureHybridR = L.layerGroup([azureSatR,  azureHybridOvR]);
 
         map1 = L.map('map1', {
             layers: [osmL], center: center, zoom: 15,
@@ -630,8 +643,14 @@
         // ── Add layer controls ─────────────────────────────────────────────
         // Obscure layers are NOT in the control — they cannot be toggled.
         // GeoJSON layers ARE in the control — checked (visible) by default.
-        L.control.layers({ 'OpenStreetMap': osmL, 'Azure Maps': azureL }, overlaysL).addTo(map1);
-        L.control.layers({ 'OpenStreetMap': osmR, 'Azure Maps': azureR }, overlaysR).addTo(map2);
+        L.control.layers(
+            { 'OpenStreetMap': osmL, 'Azure Road': azureRoadL, 'Azure Hybrid': azureHybridL },
+            overlaysL
+        ).addTo(map1);
+        L.control.layers(
+            { 'OpenStreetMap': osmR, 'Azure Road': azureRoadR, 'Azure Hybrid': azureHybridR },
+            overlaysR
+        ).addTo(map2);
 
         // ── Click-to-coordinate control (one per map, bottom-left) ──────────
         function makeCoordControl(position) {
