@@ -21,16 +21,21 @@ class FlightForm(forms.ModelForm):
 class SiteCreateForm(forms.ModelForm):
     class Meta:
         model = Site
-        fields = ['name', 'longitude', 'latitude']
+        fields = ['name', 'longitude', 'latitude', 'proj4']
         widgets = {
             'name': forms.TextInput(attrs={'placeholder': 'Site name'}),
             'longitude': forms.NumberInput(attrs={'step': 'any', 'placeholder': 'Longitude'}),
             'latitude': forms.NumberInput(attrs={'step': 'any', 'placeholder': 'Latitude'}),
+            'proj4': forms.Textarea(attrs={
+                'placeholder': '+proj=lcc +lat_0=39.3333333333333 +lon_0=-77.75 +lat_1=40.9666666666667 +lat_2=39.9333333333333 +x_0=600000 +y_0=0 +ellps=GRS80 +nadgrids=us_noaa_pahpgn.tif +units=us-ft +no_defs +type=crs',
+                'rows': 3,
+            }),
         }
         labels = {
             'name': 'Site Name',
             'longitude': 'Longitude',
             'latitude': 'Latitude',
+            'proj4': 'Proj.4 String',
         }
 
 

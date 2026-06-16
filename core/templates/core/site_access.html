@@ -36,6 +36,7 @@
             color: #1b2430;
         }
         .field input,
+        .field textarea,
         select {
             width: 100%;
             padding: 14px;
@@ -48,6 +49,7 @@
             box-sizing: border-box;
         }
         .field input:focus,
+        .field textarea:focus,
         select:focus {
             border-color: var(--accent);
             box-shadow: 0 0 0 4px rgba(15, 110, 203, 0.12);
@@ -218,6 +220,11 @@
                         <label for="{{ add_site_form.latitude.id_for_label }}">{{ add_site_form.latitude.label }}</label>
                         {{ add_site_form.latitude }}
                         {{ add_site_form.latitude.errors }}
+                    </div>
+                    <div class="field">
+                        <label for="{{ add_site_form.proj4.id_for_label }}">{{ add_site_form.proj4.label }}</label>
+                        {{ add_site_form.proj4 }}
+                        {{ add_site_form.proj4.errors }}
                     </div>
                     <div class="btn-row">
                         <button type="submit" name="add_site">Create Site</button>
