@@ -384,13 +384,15 @@
     }
 
     const TILE_OPTS = {
-        tms: true, opacity: 1.0, minZoom: 13, maxZoom: 25,
+        tms: true, opacity: 1.0, minZoom: 13,
+        maxNativeZoom: 22, maxZoom: 25,
         keepBuffer: 1, updateWhenIdle: true, updateWhenZooming: false,
     };
 
     // FIX 2: Obscure tile options — note pane is set per-map below
     const OBSCURE_OPTS = {
-        tms: true, opacity: 1.0, minZoom: 13, maxZoom: 25,
+        tms: true, opacity: 1.0, minZoom: 13,
+        maxNativeZoom: 22, maxZoom: 25,
         crossOrigin: 'anonymous',
         // pane is added individually per map
     };
