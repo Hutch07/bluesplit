@@ -43,7 +43,7 @@ class Site(models.Model):
         max_length=500,
         blank=True,
         default='',
-        help_text='Proj.4 string for this site, e.g. +proj=lcc +lat_0=39.3333333333333 +lon_0=-77.75 +lat_1=40.9666666666667 +lat_2=39.9333333333333 +x_0=600000 +y_0=0 +ellps=GRS80 +nadgrids=us_noaa_pahpgn.tif +units=us-ft +no_defs +type=crs',
+        help_text='Proj.4 string for this site, Go to epsg.io and get the proj4 string',
     )
     allowed_users = models.ManyToManyField(
         'User',

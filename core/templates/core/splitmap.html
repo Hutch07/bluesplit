@@ -23,6 +23,7 @@
 
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.8.1/proj4.js" crossorigin="anonymous"></script>
 
     <style>
         *, *::before, *::after { box-sizing: border-box; }
@@ -220,7 +221,7 @@
             color: rgba(255,255,255,0.55);
             font-size: 0.78rem;
             font-family: 'SF Mono', 'Fira Mono', monospace;
-            white-space: nowrap;
+            white-space: normal;
             min-width: 230px;
             text-align: center;
             pointer-events: none;
@@ -254,6 +255,7 @@
     <script>
         const SITE_LAT          = {{ site.latitude }};
         const SITE_LNG          = {{ site.longitude }};
+        const SITE_PROJ4        = "{{ site.proj4|escapejs }}";
         const SITE_NAME         = "{{ site.name|escapejs }}";
         const FLIGHT_DICT       = {{ flight_dict_json|safe }};
         const FLIGHT_DATES      = {{ flight_dates_json|safe }};
@@ -682,20 +684,40 @@
         L.control.layers(basemapsR, overlaysR).addTo(map2);
 
         // ── Click-to-coordinate control (one per map, bottom-left) ──────────
+        function formatProjectedCoords(lat, lng) {
+            if (!SITE_PROJ4 || SITE_PROJ4.trim() === '') return null;
+            if (typeof proj4 !== 'function') return null;
+            try {
+                const projected = proj4('WGS84', SITE_PROJ4, [lng, lat]);
+                if (!projected || projected.length !== 2) return null;
+                const [x, y] = projected;
+                if (Number.isNaN(x) || Number.isNaN(y)) return null;
+                return { x: x, y: y };
+            } catch (err) {
+                console.warn('Proj4 transform failed:', err);
+                return null;
+            }
+        }
+
         function makeCoordControl(position) {
             return L.Control.extend({
                 options: { position: position },
                 onAdd: function() {
-                    const div = L.DomUtil.create('div', 'coord-control');
+                    const div = L.DomUtil.create('div', 'leaflet-control coord-control');
                     div.innerHTML = '<span class="coord-label">Click map for coordinates</span>—';
                     this._div = div;
                     return div;
                 },
                 update: function(lat, lng) {
                     this._div.classList.add('has-value');
-                    this._div.innerHTML =
-                        '<span class="coord-label">Coordinates</span>' +
+                    const projected = formatProjectedCoords(lat, lng);
+                    let html = '<span class="coord-label">Coordinates</span>' +
                         lat.toFixed(7) + ',&nbsp;' + lng.toFixed(7);
+                    if (projected) {
+                        html += '<br><span class="coord-label">State plane</span>' +
+                            projected.x.toFixed(2) + ',&nbsp;' + projected.y.toFixed(2);
+                    }
+                    this._div.innerHTML = html;
                 }
             });
         }
