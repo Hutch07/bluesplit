@@ -177,3 +177,6 @@ DEFAULT_FROM_EMAIL = os.environ.get('DJANGO_DEFAULT_FROM_EMAIL', 'no-reply@blues
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
+# Azure Maps subscription key used by the browser tile layer.
+AZURE_MAPS_KEY = os.environ.get('MapsPrimaryKey', '')
+
