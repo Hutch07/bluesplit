@@ -468,42 +468,54 @@
         const streetMapL = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', baseLayerOpts);
         const streetMapR = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', baseLayerOpts);
 
+        let defaultLayerL = streetMapL;
+        let defaultLayerR = streetMapR;
+        const basemapsL = { 'OpenStreetMap': streetMapL };
+        const basemapsR = { 'OpenStreetMap': streetMapR };
+
+        if (AZURE_MAPS_KEY) {
+            const azureTileUrl = function(tilesetId) {
+                return 'https://atlas.microsoft.com/map/tile?api-version=2024-04-01' +
+                    '&tilesetId=' + tilesetId +
+                    '&zoom={z}&x={x}&y={y}&subscription-key=' +
+                    encodeURIComponent(AZURE_MAPS_KEY);
+            };
+            const azureAttribution =
+                '&copy; <a href="https://azure.microsoft.com/services/azure-maps/" target="_blank" rel="noopener">Microsoft Azure Maps</a>';
+            const azureRoadL = L.tileLayer(azureTileUrl('microsoft.base.road'), {
+                maxNativeZoom: 22, maxZoom: 25, attribution: azureAttribution
+            });
+            const azureRoadR = L.tileLayer(azureTileUrl('microsoft.base.road'), {
+                maxNativeZoom: 22, maxZoom: 25, attribution: azureAttribution
+            });
+            const azureImageryL = L.tileLayer(azureTileUrl('microsoft.imagery'), {
+                maxNativeZoom: 22, maxZoom: 25, attribution: azureAttribution
+            });
+            const azureImageryR = L.tileLayer(azureTileUrl('microsoft.imagery'), {
+                maxNativeZoom: 22, maxZoom: 25, attribution: azureAttribution
+            });
+
+            defaultLayerL = azureRoadL;
+            defaultLayerR = azureRoadR;
+            basemapsL['Microsoft Base Roads'] = azureRoadL;
+            basemapsL['Microsoft Imagery'] = azureImageryL;
+            basemapsR['Microsoft Base Roads'] = azureRoadR;
+            basemapsR['Microsoft Imagery'] = azureImageryR;
+        }
+
         map1 = L.map('map1', {
-            layers: [streetMapL],
+            layers: [defaultLayerL],
             center: center, zoom: 15,
             preferCanvas: true, maxZoom: 25,
         });
         map2 = L.map('map2', {
-            layers: [streetMapR],
+            layers: [defaultLayerR],
             center: center, zoom: 15,
             zoomControl: false, preferCanvas: true, maxZoom: 25,
         });
 
         map1.invalidateSize({ animate: false });
         map2.invalidateSize({ animate: false });
-
-        const basemapsL = { 'OpenStreetMap': streetMapL };
-        const basemapsR = { 'OpenStreetMap': streetMapR };
-
-        if (AZURE_MAPS_KEY) {
-            const azureRoadUrl =
-                'https://atlas.microsoft.com/map/tile?api-version=2024-04-01' +
-                '&tilesetId=microsoft.base.road' +
-                '&zoom={z}&x={x}&y={y}&subscription-key=' +
-                encodeURIComponent(AZURE_MAPS_KEY);
-            const azureRoadL = L.tileLayer(azureRoadUrl, {
-                maxNativeZoom: 22,
-                maxZoom: 25,
-                attribution: '&copy; <a href="https://azure.microsoft.com/services/azure-maps/" target="_blank" rel="noopener">Microsoft Azure Maps</a>'
-            });
-            const azureRoadR = L.tileLayer(azureRoadUrl, {
-                maxNativeZoom: 22,
-                maxZoom: 25,
-                attribution: '&copy; <a href="https://azure.microsoft.com/services/azure-maps/" target="_blank" rel="noopener">Microsoft Azure Maps</a>'
-            });
-            basemapsL['Microsoft Base Roads'] = azureRoadL;
-            basemapsR['Microsoft Base Roads'] = azureRoadR;
-        }
 
         map1.sync(map2);
         map2.sync(map1);
