@@ -193,7 +193,6 @@ def splitmap(request, site_id):
     context = {
         'site': site,
         'single_flight_mode': single_flight_mode,
-        'azure_maps_key': settings.AZURE_MAPS_KEY,
         'flight_left': flight_left,
         'flight_right': flight_right,
         'flight_left_key': date_to_key(flight_left.date),

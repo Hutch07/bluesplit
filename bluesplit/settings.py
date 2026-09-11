@@ -177,9 +177,3 @@ DEFAULT_FROM_EMAIL = os.environ.get('DJANGO_DEFAULT_FROM_EMAIL', 'no-reply@blues
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-# ── Azure Maps ──────────────────────────────────────────────────────────────
-# Set MapsClient and MapsPrimaryKey as Azure environment variables.
-# MapsClient  = Azure Maps client/subscription ID
-# MapsPrimaryKey = Azure Maps primary subscription key
-AZURE_MAPS_CLIENT  = os.environ.get('MapsClient', '')
-AZURE_MAPS_KEY     = os.environ.get('MapsPrimaryKey', '')
